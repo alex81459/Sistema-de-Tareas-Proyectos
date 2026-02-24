@@ -1,0 +1,37 @@
+.filtros {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: end;
+  background: #fff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.usuario-nombre {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.text-correo {
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.text-fecha {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.acciones {
+  display: flex;
+  gap: 0.35rem;
+}

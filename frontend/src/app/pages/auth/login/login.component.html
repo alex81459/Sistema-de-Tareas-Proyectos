@@ -1,0 +1,55 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-icon">
+      <i class="pi pi-check-square"></i>
+    </div>
+    <h1>Iniciar Sesión</h1>
+    <p class="subtitle">Ingresa tus credenciales para continuar</p>
+
+    <p-divider></p-divider>
+
+    <form (ngSubmit)="iniciarSesion()">
+      <div class="mb-4">
+        <label for="correo" class="block mb-2 font-medium">
+          <i class="pi pi-envelope mr-1"></i> Correo electrónico
+        </label>
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-at"></i>
+          <input pInputText id="correo" [(ngModel)]="correo" name="correo"
+                 placeholder="tu@correo.com" class="w-full" required />
+        </span>
+      </div>
+
+      <div class="mb-4">
+        <label for="contrasena" class="block mb-2 font-medium">
+          <i class="pi pi-lock mr-1"></i> Contraseña
+        </label>
+        <p-password id="contrasena" [(ngModel)]="contrasena" name="contrasena"
+                    [feedback]="false" [toggleMask]="true"
+                    styleClass="w-full" inputStyleClass="w-full"
+                    placeholder="Mínimo 8 caracteres" required>
+        </p-password>
+      </div>
+
+      <div class="mb-4">
+        <p-checkbox [ngModel]="recordarSesion" (ngModelChange)="recordarSesion = $event" name="recordarSesion" label="Recordar sesión" [binary]="true"></p-checkbox>
+      </div>
+
+      <p-message *ngIf="error" severity="error" [text]="error" styleClass="w-full mb-3"></p-message>
+
+      <button pButton type="submit" label="Iniciar Sesión" icon="pi pi-sign-in" iconPos="left"
+              class="w-full p-button-raised" [loading]="cargando"></button>
+    </form>
+
+    <p-divider align="center">
+      <span class="text-sm text-color-secondary">o</span>
+    </p-divider>
+
+    <p class="auth-footer">
+      ¿No tienes cuenta?
+      <a routerLink="/registrar" class="font-bold">
+        <i class="pi pi-user-plus mr-1"></i>Regístrate
+      </a>
+    </p>
+  </div>
+</div>

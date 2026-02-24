@@ -1,0 +1,61 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-icon">
+      <i class="pi pi-user-plus"></i>
+    </div>
+    <h1>Crear Cuenta</h1>
+    <p class="subtitle">Regístrate para comenzar a gestionar tus proyectos</p>
+
+    <p-divider></p-divider>
+
+    <form (ngSubmit)="registrar()">
+      <div class="mb-4">
+        <label for="nombre" class="block mb-2 font-medium">
+          <i class="pi pi-user mr-1"></i> Nombre completo
+        </label>
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-id-card"></i>
+          <input pInputText id="nombre" [(ngModel)]="nombreCompleto" name="nombre"
+                 placeholder="Tu nombre" class="w-full" required />
+        </span>
+      </div>
+
+      <div class="mb-4">
+        <label for="correo" class="block mb-2 font-medium">
+          <i class="pi pi-envelope mr-1"></i> Correo electrónico
+        </label>
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-at"></i>
+          <input pInputText id="correo" [(ngModel)]="correo" name="correo"
+                 placeholder="tu@correo.com" class="w-full" required />
+        </span>
+      </div>
+
+      <div class="mb-4">
+        <label for="contrasena" class="block mb-2 font-medium">
+          <i class="pi pi-lock mr-1"></i> Contraseña
+        </label>
+        <p-password id="contrasena" [(ngModel)]="contrasena" name="contrasena"
+                    [toggleMask]="true" styleClass="w-full" inputStyleClass="w-full"
+                    placeholder="Mínimo 8 caracteres + número" required>
+        </p-password>
+      </div>
+
+      <p-message *ngIf="error" severity="error" [text]="error" styleClass="w-full mb-3"></p-message>
+
+      <button pButton type="submit" label="Crear Cuenta" icon="pi pi-user-plus"
+              class="w-full p-button-raised" [loading]="cargando"></button>
+    </form>
+
+    <p-divider align="center">
+      <span class="text-sm text-color-secondary">o</span>
+    </p-divider>
+
+    <p class="auth-footer">
+      ¿Ya tienes cuenta?
+      <a routerLink="/iniciar-sesion" class="font-bold">
+        <i class="pi pi-sign-in mr-1"></i>Inicia sesión
+      </a>
+    </p>
+  </div>
+</div>

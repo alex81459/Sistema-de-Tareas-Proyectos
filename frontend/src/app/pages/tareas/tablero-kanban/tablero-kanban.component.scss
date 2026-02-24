@@ -1,0 +1,55 @@
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  p {
+    color: #64748b;
+  }
+}
+
+.col-count {
+  background: #e2e8f0;
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.kanban-drop-zone {
+  min-height: 100px;
+}
+
+.card-date {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.card-overdue {
+  margin-left: 0.25rem;
+}
+
+.card-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+
+  .tag-chip {
+    font-size: 0.65rem;
+  }
+}
+
+.card-project {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.5rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid #f1f5f9;
+}

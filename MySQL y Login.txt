@@ -1,0 +1,8 @@
+MySQL 8.0.45
+puerto 1219
+Root Password T1R6C@52G3ty8VGIwn#MJIu5=
+MySQL80 servicio Windows
+
+Usuario Admin Demo
+Correo: demo@ejemplo.com
+Contraseña: Demo1234

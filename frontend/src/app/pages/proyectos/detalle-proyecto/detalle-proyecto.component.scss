@@ -1,0 +1,81 @@
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.back-link {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 0.5rem;
+}
+
+.desc {
+  color: #64748b;
+}
+
+.tasks-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+
+  i {
+    font-size: 3rem;
+  }
+
+  p {
+    margin-top: 0.5rem;
+  }
+}
+
+.task-card {
+  margin-bottom: 0.75rem;
+}
+
+.task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-title {
+  font-weight: 600;
+}
+
+.task-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.task-tags {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.task-right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.task-due {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}

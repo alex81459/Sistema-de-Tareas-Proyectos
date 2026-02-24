@@ -1,0 +1,198 @@
+<p-toolbar styleClass="toolbar-header mb-4">
+  <ng-template pTemplate="left">
+    <i class="pi pi-list mr-2" style="font-size:1.4rem;color:var(--primary-color)"></i>
+    <h2 class="m-0 mr-2">Tareas</h2>
+    <p-tag value="{{total}}" severity="info" [rounded]="true" icon="pi pi-hashtag"></p-tag>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Exportar Excel" icon="pi pi-file-excel"
+            class="p-button-success p-button-outlined mr-2" (click)="exportar()" pTooltip="Descargar Excel"></button>
+    <button pButton label="Nueva Tarea" icon="pi pi-plus" class="p-button-raised" (click)="abrirDialogo()"></button>
+  </ng-template>
+</p-toolbar>
+
+
+<div class="filtros">
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-search mr-1"></i>Buscar</label>
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input pInputText placeholder="Título o descripción..." [(ngModel)]="filtros.buscar"
+             (input)="cargar()" style="width: 220px;" />
+    </span>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label">Proyecto</label>
+    <p-dropdown [options]="opcionesProyecto" [(ngModel)]="filtros.proyecto_id"
+                (onChange)="cargar()" placeholder="Todos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'180px'}"></p-dropdown>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label">Estado</label>
+    <p-dropdown [options]="opcionesEstado" [(ngModel)]="filtros.estado"
+                (onChange)="cargar()" placeholder="Todos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'150px'}"></p-dropdown>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label">Prioridad</label>
+    <p-dropdown [options]="opcionesPrioridad" [(ngModel)]="filtros.prioridad"
+                (onChange)="cargar()" placeholder="Todas" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'140px'}"></p-dropdown>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label">Vencida</label>
+    <p-dropdown [options]="[{label:'Sí',value:'true'},{label:'No',value:'false'}]"
+                [(ngModel)]="filtros.vencida" (onChange)="cargar()"
+                placeholder="—" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'100px'}"></p-dropdown>
+  </div>
+</div>
+
+<p-table [value]="tareas" [lazy]="true" [rows]="tamano" [totalRecords]="total"
+         [loading]="cargando" (onLazyLoad)="cargarLazy($event)"
+         [paginator]="true" [rowsPerPageOptions]="[10,20,50]"
+         styleClass="p-datatable-sm p-datatable-striped">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Título</th>
+      <th>Proyecto</th>
+      <th>Estado</th>
+      <th>Prioridad</th>
+      <th>Etiquetas</th>
+      <th>Vencimiento</th>
+      <th style="width: 210px;">Acciones</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-tarea>
+    <tr>
+      <td>
+        <div class="tarea-titulo">{{ tarea.titulo }}</div>
+        <div *ngIf="tarea.descripcion" class="tarea-desc">
+          {{ tarea.descripcion }}
+        </div>
+      </td>
+      <td class="text-proyecto">{{ tarea.nombre_proyecto }}</td>
+      <td>
+        <p-tag [value]="tarea.estado === 'en_progreso' ? 'En Progreso' : (tarea.estado === 'completada' ? 'Completada' : 'Pendiente')"
+               [severity]="tarea.estado === 'completada' ? 'success' : (tarea.estado === 'en_progreso' ? 'warning' : 'info')"
+               [rounded]="true"
+               [icon]="tarea.estado === 'completada' ? 'pi pi-check-circle' : (tarea.estado === 'en_progreso' ? 'pi pi-spin pi-spinner' : 'pi pi-inbox')"></p-tag>
+      </td>
+      <td>
+        <p-tag [value]="tarea.prioridad | titlecase"
+               [severity]="tarea.prioridad === 'urgente' ? 'danger' : (tarea.prioridad === 'alta' ? 'warning' : (tarea.prioridad === 'media' ? 'info' : 'success'))"
+               [rounded]="true"></p-tag>
+      </td>
+      <td>
+        <p-chip *ngFor="let et of tarea.etiquetas"
+                [label]="et.nombre"
+                [style]="{'background': (et.color || '#94a3b8') + '20', 'color': et.color || '#94a3b8', 'margin-right': '4px', 'margin-bottom': '2px'}"
+                styleClass="chip-sm"></p-chip>
+      </td>
+      <td>
+        <span *ngIf="tarea.fecha_vencimiento" class="text-vencimiento"><i class="pi pi-calendar mr-1"></i>{{ tarea.fecha_vencimiento }}</span>
+        <p-tag *ngIf="tarea.esta_vencida" value="VENCIDA" severity="danger" icon="pi pi-exclamation-triangle" [rounded]="true" class="ml-1"></p-tag>
+      </td>
+      <td>
+        <div class="acciones">
+          <button pButton icon="pi pi-comments" class="p-button-text p-button-sm"
+                  (click)="abrirComentarios(tarea)" pTooltip="Comentarios"></button>
+          <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
+                  (click)="editar(tarea)" pTooltip="Editar"></button>
+          <button *ngIf="tarea.estado !== 'completada'" pButton icon="pi pi-check"
+                  class="p-button-text p-button-sm p-button-success"
+                  (click)="completar(tarea)" pTooltip="Completar"></button>
+          <button *ngIf="tarea.estado === 'completada'" pButton icon="pi pi-replay"
+                  class="p-button-text p-button-sm p-button-warning"
+                  (click)="reabrir(tarea)" pTooltip="Reabrir"></button>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                  (click)="eliminar(tarea)" pTooltip="Eliminar"></button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="7" class="empty-msg">
+      <div class="text-center p-4">
+        <i class="pi pi-inbox" style="font-size:2.5rem;color:var(--text-color-secondary)"></i>
+        <p class="mt-2 text-color-secondary">No hay tareas que coincidan con los filtros</p>
+      </div>
+    </td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [header]="tareaEditar ? 'Editar Tarea' : 'Nueva Tarea'"
+          [(visible)]="dialogoVisible" [modal]="true" [style]="{width: '550px'}" [draggable]="true" [resizable]="false">
+  <div class="grid">
+    <div class="col-12">
+      <label class="block mb-2 font-medium">Proyecto *</label>
+      <p-dropdown [options]="opcionesProyecto" [(ngModel)]="form.proyecto_id"
+                  placeholder="Seleccionar proyecto" optionLabel="label" optionValue="value"
+                  [style]="{width:'100%'}"></p-dropdown>
+    </div>
+    <div class="col-12">
+      <label class="block mb-2 font-medium"><i class="pi pi-file mr-1"></i>Título *</label>
+      <input pInputText [(ngModel)]="form.titulo" class="w-full" placeholder="Título de la tarea" maxlength="120" />
+    </div>
+    <div class="col-12">
+      <label class="block mb-2 font-medium">Descripción</label>
+      <textarea pInputTextarea [(ngModel)]="form.descripcion" class="w-full" rows="3"
+                placeholder="Descripción opcional"></textarea>
+    </div>
+    <div class="col-6">
+      <label class="block mb-2 font-medium">Estado</label>
+      <p-dropdown [options]="opcionesEstado" [(ngModel)]="form.estado"
+                  optionLabel="label" optionValue="value" [style]="{width:'100%'}"></p-dropdown>
+    </div>
+    <div class="col-6">
+      <label class="block mb-2 font-medium">Prioridad</label>
+      <p-dropdown [options]="opcionesPrioridad" [(ngModel)]="form.prioridad"
+                  optionLabel="label" optionValue="value" [style]="{width:'100%'}"></p-dropdown>
+    </div>
+    <div class="col-6">
+      <label class="block mb-2 font-medium">Fecha Vencimiento</label>
+      <p-calendar [(ngModel)]="formFechaVencimiento" dateFormat="yy-mm-dd"
+                  [showClear]="true" [style]="{width:'100%'}" inputStyleClass="w-full"></p-calendar>
+    </div>
+    <div class="col-6">
+      <label class="block mb-2 font-medium">Etiquetas</label>
+      <p-multiSelect [options]="opcionesEtiqueta" [(ngModel)]="form.etiquetas_ids"
+                     optionLabel="label" optionValue="value" placeholder="Seleccionar"
+                     [style]="{width:'100%'}"></p-multiSelect>
+    </div>
+  </div>
+  <p-message *ngIf="formError" severity="error" [text]="formError" styleClass="w-full mt-2"></p-message>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogoVisible=false"></button>
+    <button pButton [label]="tareaEditar ? 'Guardar' : 'Crear'" icon="pi pi-check"
+            (click)="guardar()" [loading]="guardando"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog [header]="'Comentarios — ' + (tareaComentarios?.titulo || '')" [(visible)]="dialogoComentarios" [modal]="true"
+          [style]="{width: '560px'}" [draggable]="true" [resizable]="false">
+  <div class="comment-input-section">
+    <textarea pInputTextarea [(ngModel)]="nuevoComentario" class="w-full" rows="2"
+              placeholder="Escribe un comentario..." maxlength="5000"></textarea>
+    <button pButton label="Enviar" icon="pi pi-send" class="p-button-sm mt-2"
+            (click)="enviarComentario()" [loading]="enviandoComentario"
+            [disabled]="!nuevoComentario.trim()"></button>
+  </div>
+
+  <div *ngIf="cargandoComentarios" class="text-center p-4">
+    <i class="pi pi-spin pi-spinner" style="font-size: 1.5rem; color: #64748b;"></i>
+  </div>
+  <div *ngIf="!cargandoComentarios && comentarios.length === 0" class="text-center p-4 text-color-secondary">
+    <i class="pi pi-comments" style="font-size: 2rem;"></i>
+    <p class="mt-2">No hay comentarios aún</p>
+  </div>
+  <div *ngFor="let c of comentarios; let last = last" class="comment-item">
+    <div class="comment-header">
+      <p-avatar icon="pi pi-user" shape="circle" size="normal"
+                [style]="{'background-color':'#eef2ff','color':'#6366f1','width':'32px','height':'32px','font-size':'0.8rem'}"></p-avatar>
+      <span class="comment-date">{{ c.creado_en | date:'dd/MM/yy HH:mm' }}</span>
+    </div>
+    <div class="comment-body">{{ c.contenido }}</div>
+    <hr *ngIf="!last" class="comment-divider">
+  </div>
+</p-dialog>

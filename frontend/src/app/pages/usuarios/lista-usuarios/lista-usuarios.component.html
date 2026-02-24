@@ -1,0 +1,157 @@
+<p-toolbar styleClass="toolbar-header mb-4">
+  <ng-template pTemplate="left">
+    <i class="pi pi-users mr-2" style="font-size:1.4rem;color:var(--primary-color)"></i>
+    <h2 class="m-0 mr-2">Gestión de Usuarios</h2>
+    <p-tag value="{{total}}" severity="info" [rounded]="true" icon="pi pi-hashtag"></p-tag>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Nuevo Usuario" icon="pi pi-user-plus" class="p-button-raised"
+            (click)="abrirDialogo()"></button>
+  </ng-template>
+</p-toolbar>
+
+<div class="filtros">
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-search mr-1"></i>Buscar</label>
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input pInputText placeholder="Nombre o correo..." [(ngModel)]="filtros.buscar"
+             (input)="cargar()" style="width: 240px;" />
+    </span>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-shield mr-1"></i>Rol</label>
+    <p-dropdown [options]="opcionesRol" [(ngModel)]="filtros.rol"
+                (onChange)="cargar()" placeholder="Todos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'150px'}"></p-dropdown>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-circle mr-1"></i>Estado</label>
+    <p-dropdown [options]="opcionesActivo" [(ngModel)]="filtros.activo"
+                (onChange)="cargar()" placeholder="Todos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'150px'}"></p-dropdown>
+  </div>
+</div>
+
+<p-table [value]="usuarios" [lazy]="true" [rows]="tamano" [totalRecords]="total"
+         [loading]="cargando" (onLazyLoad)="cargarLazy($event)"
+         [paginator]="true" [rowsPerPageOptions]="[10,20,50]"
+         styleClass="p-datatable-sm p-datatable-striped">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Nombre</th>
+      <th>Correo</th>
+      <th>Rol</th>
+      <th>Estado</th>
+      <th>Registro</th>
+      <th style="width: 220px;">Acciones</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-usuario>
+    <tr>
+      <td>
+        <div class="usuario-nombre">
+          <i class="pi pi-user mr-2" style="color:var(--primary-color)"></i>
+          {{ usuario.nombre_completo }}
+        </div>
+      </td>
+      <td class="text-correo">{{ usuario.correo }}</td>
+      <td>
+        <p-tag [value]="usuario.rol === 'admin' ? 'Administrador' : 'Usuario'"
+               [severity]="usuario.rol === 'admin' ? 'danger' : 'info'"
+               [rounded]="true"
+               [icon]="usuario.rol === 'admin' ? 'pi pi-shield' : 'pi pi-user'"></p-tag>
+      </td>
+      <td>
+        <p-tag [value]="usuario.esta_activo ? 'Activo' : 'Inactivo'"
+               [severity]="usuario.esta_activo ? 'success' : 'warning'"
+               [rounded]="true"
+               [icon]="usuario.esta_activo ? 'pi pi-check-circle' : 'pi pi-ban'"></p-tag>
+      </td>
+      <td class="text-fecha">{{ usuario.creado_en | date:'dd/MM/yyyy' }}</td>
+      <td>
+        <div class="acciones">
+          <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
+                  (click)="editar(usuario)" pTooltip="Editar" tooltipPosition="top"></button>
+          <button pButton icon="pi pi-key" class="p-button-text p-button-sm p-button-warning"
+                  (click)="abrirResetPassword(usuario)" pTooltip="Cambiar contraseña" tooltipPosition="top"></button>
+          <button pButton [icon]="usuario.esta_activo ? 'pi pi-ban' : 'pi pi-check'"
+                  [class]="'p-button-text p-button-sm ' + (usuario.esta_activo ? 'p-button-secondary' : 'p-button-success')"
+                  (click)="toggleActivo(usuario)"
+                  [pTooltip]="usuario.esta_activo ? 'Desactivar' : 'Activar'" tooltipPosition="top"></button>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                  (click)="eliminar(usuario)" pTooltip="Eliminar" tooltipPosition="top"></button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="6">
+      <div class="text-center p-4">
+        <i class="pi pi-users" style="font-size:2.5rem;color:var(--text-color-secondary)"></i>
+        <p class="mt-2 text-color-secondary">No hay usuarios que coincidan con los filtros</p>
+      </div>
+    </td></tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [header]="usuarioEditar ? 'Editar Usuario' : 'Nuevo Usuario'"
+          [(visible)]="dialogoVisible" [modal]="true" [style]="{width: '500px'}" [draggable]="true" [resizable]="false">
+  <div class="grid">
+    <div class="col-12">
+      <label class="block mb-2 font-medium"><i class="pi pi-user mr-1"></i>Nombre completo *</label>
+      <input pInputText [(ngModel)]="form.nombre_completo" class="w-full"
+             placeholder="Nombre del usuario" maxlength="150" />
+    </div>
+    <div class="col-12">
+      <label class="block mb-2 font-medium"><i class="pi pi-at mr-1"></i>Correo electrónico *</label>
+      <input pInputText [(ngModel)]="form.correo" class="w-full" type="email"
+             placeholder="correo@ejemplo.com" maxlength="255" />
+    </div>
+    <div class="col-6">
+      <label class="block mb-2 font-medium"><i class="pi pi-shield mr-1"></i>Rol</label>
+      <p-dropdown [options]="opcionesRol" [(ngModel)]="form.rol"
+                  optionLabel="label" optionValue="value" [style]="{width:'100%'}"></p-dropdown>
+    </div>
+    <div class="col-6" *ngIf="usuarioEditar">
+      <label class="block mb-2 font-medium"><i class="pi pi-circle mr-1"></i>Estado</label>
+      <div class="mt-2">
+        <p-inputSwitch [(ngModel)]="form.esta_activo"></p-inputSwitch>
+        <span class="ml-2">{{ form.esta_activo ? 'Activo' : 'Inactivo' }}</span>
+      </div>
+    </div>
+    <div class="col-12" *ngIf="!usuarioEditar">
+      <label class="block mb-2 font-medium"><i class="pi pi-lock mr-1"></i>Contraseña *</label>
+      <p-password [(ngModel)]="form.contrasena" [toggleMask]="true" [feedback]="true"
+                  placeholder="Mínimo 8 caracteres" styleClass="w-full"
+                  inputStyleClass="w-full"></p-password>
+    </div>
+  </div>
+  <p-message *ngIf="formError" severity="error" [text]="formError" styleClass="w-full mt-3"></p-message>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogoVisible=false"></button>
+    <button pButton [label]="usuarioEditar ? 'Guardar' : 'Crear'" icon="pi pi-check"
+            (click)="guardar()" [loading]="guardando"></button>
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Restablecer Contraseña" [(visible)]="dialogoPassword" [modal]="true"
+          [style]="{width: '420px'}" [draggable]="true" [resizable]="false">
+  <div *ngIf="usuarioPassword" class="mb-3">
+    <p class="text-color-secondary mb-3">
+      <i class="pi pi-info-circle mr-1"></i>
+      Restableciendo contraseña de <strong>{{ usuarioPassword.nombre_completo }}</strong>
+      ({{ usuarioPassword.correo }})
+    </p>
+    <label class="block mb-2 font-medium"><i class="pi pi-lock mr-1"></i>Nueva contraseña *</label>
+    <p-password [(ngModel)]="nuevaContrasena" [toggleMask]="true" [feedback]="true"
+                placeholder="Mínimo 8 caracteres" styleClass="w-full"
+                inputStyleClass="w-full"></p-password>
+  </div>
+  <p-message *ngIf="passwordError" severity="error" [text]="passwordError" styleClass="w-full mt-2"></p-message>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogoPassword=false"></button>
+    <button pButton label="Restablecer" icon="pi pi-key" class="p-button-warning"
+            (click)="resetPassword()" [loading]="guardandoPassword"></button>
+  </ng-template>
+</p-dialog>

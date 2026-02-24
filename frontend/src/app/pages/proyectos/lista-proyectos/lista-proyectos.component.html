@@ -1,0 +1,100 @@
+<p-toolbar styleClass="mb-4 toolbar-header">
+  <ng-template pTemplate="left">
+    <div>
+      <h2 class="m-0"><i class="pi pi-briefcase mr-2" style="color: #3b82f6;"></i>Proyectos</h2>
+      <p class="text-color-secondary text-sm mt-1 mb-0">Gestiona tus proyectos</p>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Nuevo Proyecto" icon="pi pi-plus" class="p-button-raised" (click)="abrirDialogo()"></button>
+  </ng-template>
+</p-toolbar>
+
+<div class="filtros">
+  <span class="p-input-icon-left">
+    <i class="pi pi-search"></i>
+    <input pInputText placeholder="Buscar proyectos..." [(ngModel)]="buscar"
+           (input)="cargar()" style="max-width: 300px;" />
+  </span>
+  <p-dropdown [options]="opcionesEstado" [(ngModel)]="filtroEstado"
+              (onChange)="cargar()" placeholder="Estado" [showClear]="true"
+              optionLabel="label" optionValue="value">
+    <ng-template pTemplate="selectedItem" let-item>
+      <span><i class="pi pi-circle-fill mr-1" [style.color]="item.value === 'activo' ? '#3b82f6' : '#94a3b8'"></i>{{ item.label }}</span>
+    </ng-template>
+  </p-dropdown>
+</div>
+
+<p-table [value]="proyectos" [lazy]="true" [rows]="tamano" [totalRecords]="total"
+         [loading]="cargando" (onLazyLoad)="cargarLazy($event)"
+         [paginator]="true" [rowsPerPageOptions]="[10,20,50]"
+         styleClass="p-datatable-sm p-datatable-striped">
+  <ng-template pTemplate="header">
+    <tr>
+      <th>Nombre</th>
+      <th>Descripción</th>
+      <th>Estado</th>
+      <th>Creado</th>
+      <th style="width: 200px;">Acciones</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-proyecto>
+    <tr>
+      <td>
+        <a [routerLink]="['/app/proyectos', proyecto.id]" class="link-nombre">
+          {{ proyecto.nombre }}
+        </a>
+      </td>
+      <td class="text-desc">
+        {{ proyecto.descripcion || '—' }}
+      </td>
+      <td>
+        <p-tag [value]="proyecto.estado" [severity]="proyecto.estado === 'activo' ? 'success' : 'warning'" [rounded]="true"
+               [icon]="proyecto.estado === 'activo' ? 'pi pi-check-circle' : 'pi pi-inbox'"></p-tag>
+      </td>
+      <td class="text-date">{{ proyecto.creado_en | date:'dd/MM/yyyy' }}</td>
+      <td>
+        <div class="acciones">
+          <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
+                  (click)="editar(proyecto)" pTooltip="Editar"></button>
+          <button *ngIf="proyecto.estado === 'activo'" pButton icon="pi pi-inbox"
+                  class="p-button-text p-button-sm p-button-warning"
+                  (click)="archivar(proyecto)" pTooltip="Archivar"></button>
+          <button *ngIf="proyecto.estado === 'archivado'" pButton icon="pi pi-replay"
+                  class="p-button-text p-button-sm p-button-success"
+                  (click)="restaurar(proyecto)" pTooltip="Restaurar"></button>
+          <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                  (click)="eliminar(proyecto)" pTooltip="Eliminar"></button>
+        </div>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr>
+      <td colspan="5" class="empty-msg">
+        <i class="pi pi-inbox" style="font-size: 2rem; color: #94a3b8;"></i>
+        <div class="mt-2">No hay proyectos</div>
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog [header]="proyectoEditar ? 'Editar Proyecto' : 'Nuevo Proyecto'"
+          [(visible)]="dialogoVisible" [modal]="true" [style]="{width: '480px'}" [draggable]="true" [resizable]="false">
+  <div class="mb-4">
+    <label class="block mb-2 font-medium"><i class="pi pi-bookmark mr-1"></i> Nombre *</label>
+    <input pInputText [(ngModel)]="form.nombre" class="w-full" placeholder="Nombre del proyecto"
+           maxlength="80" />
+  </div>
+  <div class="mb-4">
+    <label class="block mb-2 font-medium"><i class="pi pi-align-left mr-1"></i> Descripción</label>
+    <textarea pInputTextarea [(ngModel)]="form.descripcion" class="w-full" rows="3"
+              placeholder="Descripción opcional"></textarea>
+  </div>
+  <p-message *ngIf="formError" severity="error" [text]="formError" styleClass="w-full mb-2"></p-message>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogoVisible=false"></button>
+    <button pButton [label]="proyectoEditar ? 'Guardar' : 'Crear'" icon="pi pi-check"
+            (click)="guardar()" [loading]="guardando"></button>
+  </ng-template>
+</p-dialog>

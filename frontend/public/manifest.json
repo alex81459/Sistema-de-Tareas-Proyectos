@@ -1,0 +1,9 @@
+{
+  "short_name": "TaskFlowAS",
+  "name": "Sistema de Tareas y Proyectos",
+  "icons": [],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1e293b",
+  "background_color": "#f8f9fa"
+}

@@ -1,0 +1,53 @@
+<div *ngIf="proyecto">
+  <div class="detail-header">
+    <div>
+      <a routerLink="/app/proyectos" class="back-link" pTooltip="Volver a la lista" tooltipPosition="right">
+        <i class="pi pi-arrow-left"></i> Volver a proyectos
+      </a>
+      <h2><i class="pi pi-briefcase mr-2" style="color: #3b82f6;"></i>{{ proyecto.nombre }}</h2>
+      <p class="desc">{{ proyecto.descripcion || 'Sin descripción' }}</p>
+    </div>
+    <p-tag [value]="proyecto.estado" [severity]="proyecto.estado === 'activo' ? 'success' : 'warning'" [rounded]="true"
+           [icon]="proyecto.estado === 'activo' ? 'pi pi-check-circle' : 'pi pi-inbox'" styleClass="text-lg"></p-tag>
+  </div>
+
+  <p-divider></p-divider>
+
+  <h3 class="tasks-title">
+    <i class="pi pi-list mr-2"></i>Tareas del Proyecto
+    <p-badge [value]="tareas.length.toString()" severity="info" styleClass="ml-2"></p-badge>
+  </h3>
+
+  <div *ngIf="tareas.length === 0" class="empty-state">
+    <i class="pi pi-inbox" style="font-size: 3rem; color: #94a3b8;"></i>
+    <p class="mt-2">No hay tareas en este proyecto</p>
+  </div>
+
+  <div *ngFor="let tarea of tareas">
+    <p-card styleClass="task-card mb-3">
+      <div class="task-row">
+        <div>
+          <div class="task-title">
+            <i class="pi pi-file mr-1" style="color: #64748b;"></i>{{ tarea.titulo }}
+          </div>
+          <div class="task-desc">{{ tarea.descripcion || '' }}</div>
+          <div class="task-tags mt-2">
+            <p-chip *ngFor="let etiqueta of tarea.etiquetas"
+                    [label]="etiqueta.nombre"
+                    [style]="{'background': (etiqueta.color || '#94a3b8') + '20', 'color': etiqueta.color || '#94a3b8', 'font-size': '0.75rem'}">
+            </p-chip>
+          </div>
+        </div>
+        <div class="task-right">
+          <p-tag [value]="tarea.estado === 'en_progreso' ? 'En Progreso' : (tarea.estado | titlecase)"
+                 [severity]="tarea.estado === 'completada' ? 'success' : tarea.estado === 'en_progreso' ? 'info' : 'warning'"></p-tag>
+          <p-tag [value]="tarea.prioridad" [severity]="tarea.prioridad === 'urgente' ? 'danger' : tarea.prioridad === 'alta' ? 'warning' : tarea.prioridad === 'media' ? 'info' : 'success'" styleClass="mt-1"></p-tag>
+          <div *ngIf="tarea.fecha_vencimiento" class="task-due">
+            <i class="pi pi-calendar mr-1"></i>Vence: {{ tarea.fecha_vencimiento }}
+          </div>
+          <p-tag *ngIf="tarea.esta_vencida" value="VENCIDA" severity="danger" [rounded]="true" icon="pi pi-exclamation-circle"></p-tag>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>

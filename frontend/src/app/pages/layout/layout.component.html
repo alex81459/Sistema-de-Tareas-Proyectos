@@ -1,0 +1,64 @@
+<div class="app-layout">
+  <aside class="app-sidebar" [class.open]="sidebarAbierto">
+    <div class="logo">
+      <i class="pi pi-check-square" style="font-size: 1.4rem;"></i>
+      <span>TaskFlowAS</span>
+    </div>
+    <nav>
+      <a routerLink="/app/panel" routerLinkActive="active" pTooltip="Panel" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-home"></i> Panel
+      </a>
+      <a routerLink="/app/proyectos" routerLinkActive="active" pTooltip="Proyectos" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-briefcase"></i> Proyectos
+      </a>
+      <a routerLink="/app/tareas" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" pTooltip="Tareas" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-list"></i> Tareas
+      </a>
+      <a routerLink="/app/tareas/kanban" routerLinkActive="active" pTooltip="Kanban" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-objects-column"></i> Kanban
+      </a>
+      <a routerLink="/app/etiquetas" routerLinkActive="active" pTooltip="Etiquetas" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-tags"></i> Etiquetas
+      </a>
+      <a *ngIf="authService.esAdmin" routerLink="/app/usuarios" routerLinkActive="active" pTooltip="Usuarios" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-users"></i> Usuarios
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user-section">
+        <p-avatar icon="pi pi-user" shape="circle" [style]="{'background-color':'#3b82f6','color':'#fff'}"></p-avatar>
+        <div class="user-name">
+          {{ (authService.usuario$ | async)?.nombre_completo }}
+        </div>
+      </div>
+      <button pButton label="Cerrar Sesión" icon="pi pi-sign-out"
+              class="p-button-text p-button-sm btn-logout"
+              (click)="cerrarSesion()" pTooltip="Salir del sistema" tooltipPosition="top"></button>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="app-topbar">
+      <button pButton icon="pi pi-bars" class="p-button-text p-button-rounded btn-menu"
+              (click)="sidebarAbierto = !sidebarAbierto" pTooltip="Menú"></button>
+      <div class="topbar-title">
+        <i class="pi pi-server mr-2" style="color: #3b82f6;"></i>
+        Sistema de Tareas y Proyectos
+      </div>
+      <div class="topbar-user">
+        <button pButton [icon]="(themeService.darkMode$ | async) ? 'pi pi-sun' : 'pi pi-moon'"
+                class="p-button-text p-button-rounded"
+                (click)="themeService.toggle()"
+                [pTooltip]="(themeService.darkMode$ | async) ? 'Modo Claro' : 'Modo Oscuro'" tooltipPosition="bottom"></button>
+        <p-chip [label]="(authService.usuario$ | async)?.correo || ''" icon="pi pi-user"
+                styleClass="topbar-chip"></p-chip>
+      </div>
+    </header>
+    <main class="app-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<p-toast position="top-right" [life]="3500"></p-toast>
+<p-confirmDialog></p-confirmDialog>

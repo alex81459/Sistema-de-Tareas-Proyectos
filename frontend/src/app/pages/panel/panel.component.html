@@ -1,0 +1,237 @@
+<div class="page-header">
+  <div>
+    <h2><i class="pi pi-home mr-2" style="color: #3b82f6;"></i>Panel de Control</h2>
+    <p>Resumen general de tus proyectos y tareas</p>
+  </div>
+</div>
+
+<div class="grid" *ngIf="resumen">
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-blue">
+      <div class="stat-row">
+        <div class="stat-icon bg-blue-50">
+          <i class="pi pi-briefcase text-blue-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.total_proyectos_activos }}</div>
+          <div class="stat-label">Proyectos Activos</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-yellow">
+      <div class="stat-row">
+        <div class="stat-icon bg-yellow-50">
+          <i class="pi pi-clock text-yellow-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.conteo_por_estado['pendiente'] || 0 }}</div>
+          <div class="stat-label">Pendientes</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-green">
+      <div class="stat-row">
+        <div class="stat-icon bg-green-50">
+          <i class="pi pi-check-circle text-green-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.conteo_por_estado['completada'] || 0 }}</div>
+          <div class="stat-label">Completadas</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-red">
+      <div class="stat-row">
+        <div class="stat-icon bg-red-50">
+          <i class="pi pi-exclamation-triangle text-red-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.tareas_vencidas }}</div>
+          <div class="stat-label">Vencidas</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>
+
+<div class="grid mt-4" *ngIf="resumen">
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-indigo">
+      <div class="stat-row">
+        <div class="stat-icon bg-indigo-50">
+          <i class="pi pi-spin pi-spinner text-indigo-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.conteo_por_estado['en_progreso'] || 0 }}</div>
+          <div class="stat-label">En Progreso</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 md:col-6 lg:col-3">
+    <p-card styleClass="stat-prime-card border-left-orange">
+      <div class="stat-row">
+        <div class="stat-icon bg-orange-50">
+          <i class="pi pi-bell text-orange-500"></i>
+        </div>
+        <div>
+          <div class="stat-value">{{ resumen.proximas_a_vencer }}</div>
+          <div class="stat-label">Próximas a Vencer</div>
+        </div>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 md:col-6 lg:col-6" *ngIf="resumen">
+    <p-card styleClass="stat-prime-card">
+      <div class="progress-section">
+        <div class="stat-label mb-3">
+          <i class="pi pi-chart-bar mr-1"></i> Progreso General
+        </div>
+        <p-progressBar
+          [value]="progresoGeneral"
+          [showValue]="true"
+          [style]="{'height':'1.5rem','border-radius':'8px'}">
+        </p-progressBar>
+        <div class="mt-3 text-sm text-color-secondary">
+          {{ resumen.conteo_por_estado['completada'] || 0 }} de {{ (resumen.conteo_por_estado['pendiente'] || 0) + (resumen.conteo_por_estado['en_progreso'] || 0) + (resumen.conteo_por_estado['completada'] || 0) }} tareas completadas
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>
+
+<div class="grid mt-5">
+  <div class="col-12 lg:col-6">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-calendar-clock mr-2 text-orange-500"></i>
+          <span class="font-semibold">Tareas Próximas a Vencer</span>
+          <p-badge *ngIf="recordatorios.length > 0" [value]="recordatorios.length.toString()" severity="warning" styleClass="ml-2"></p-badge>
+        </div>
+      </ng-template>
+      <div *ngIf="recordatorios.length === 0" class="empty-state">
+        <i class="pi pi-check-circle" style="font-size: 2.5rem; color: #10b981;"></i>
+        <p class="mt-2">No hay tareas próximas a vencer</p>
+      </div>
+      <div *ngFor="let tarea of recordatorios; let last = last">
+        <div class="reminder-row">
+          <div class="flex align-items-center gap-2">
+            <p-avatar icon="pi pi-file" shape="circle" size="normal"
+                      [style]="{'background-color':'#eef2ff','color':'#6366f1'}"></p-avatar>
+            <div>
+              <div class="reminder-title">{{ tarea.titulo }}</div>
+              <div class="reminder-project">
+                <i class="pi pi-briefcase mr-1" style="font-size: 0.7rem;"></i>{{ tarea.nombre_proyecto }}
+              </div>
+            </div>
+          </div>
+          <div class="reminder-right">
+            <p-tag [value]="tarea.prioridad" [severity]="tarea.prioridad === 'urgente' ? 'danger' : tarea.prioridad === 'alta' ? 'warning' : tarea.prioridad === 'media' ? 'info' : 'success'"></p-tag>
+            <div class="reminder-date"><i class="pi pi-calendar mr-1"></i>{{ tarea.fecha_vencimiento }}</div>
+            <p-tag *ngIf="tarea.esta_vencida" value="VENCIDA" severity="danger" [rounded]="true" icon="pi pi-exclamation-circle"></p-tag>
+          </div>
+        </div>
+        <p-divider *ngIf="!last"></p-divider>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 lg:col-6">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-tags mr-2 text-indigo-500"></i>
+          <span class="font-semibold">Etiquetas Más Usadas</span>
+        </div>
+      </ng-template>
+      <div *ngIf="resumen && resumen.etiquetas_mas_usadas.length === 0" class="empty-state">
+        <i class="pi pi-tags" style="font-size: 2.5rem; color: #94a3b8;"></i>
+        <p class="mt-2">No hay etiquetas aún</p>
+      </div>
+      <div *ngIf="resumen">
+        <div *ngFor="let etiqueta of resumen.etiquetas_mas_usadas; let last = last">
+          <div class="tag-row">
+            <div class="tag-info">
+              <div class="tag-dot" [style.background]="etiqueta.color || '#94a3b8'"></div>
+              <p-chip [label]="etiqueta.nombre" [style]="{'background': (etiqueta.color || '#94a3b8') + '18', 'color': etiqueta.color || '#94a3b8', 'font-weight': '600'}"></p-chip>
+            </div>
+            <p-badge [value]="etiqueta.total.toString()" severity="info"></p-badge>
+          </div>
+          <p-divider *ngIf="!last"></p-divider>
+        </div>
+      </div>
+    </p-card>
+  </div>
+</div>
+
+<div class="grid mt-5" *ngIf="chartPrioridad">
+  <div class="col-12 lg:col-4">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-chart-pie mr-2 text-blue-500"></i>
+          <span class="font-semibold">Tareas por Prioridad</span>
+        </div>
+      </ng-template>
+      <div class="chart-container chart-sm">
+        <p-chart type="doughnut" [data]="chartPrioridad" [options]="chartPrioridadOpts"></p-chart>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 lg:col-8">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-chart-line mr-2 text-green-500"></i>
+          <span class="font-semibold">Creadas vs Completadas (8 semanas)</span>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <p-chart type="line" [data]="chartCreadosVsCompletados" [options]="chartCreadosVsCompletadosOpts"></p-chart>
+      </div>
+    </p-card>
+  </div>
+</div>
+
+<div class="grid mt-4" *ngIf="chartSemanal">
+  <div class="col-12 lg:col-6">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-chart-bar mr-2 text-emerald-500"></i>
+          <span class="font-semibold">Completadas por Semana</span>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <p-chart type="bar" [data]="chartSemanal" [options]="chartSemanalOpts"></p-chart>
+      </div>
+    </p-card>
+  </div>
+
+  <div class="col-12 lg:col-6">
+    <p-card>
+      <ng-template pTemplate="header">
+        <div class="card-custom-header">
+          <i class="pi pi-briefcase mr-2 text-indigo-500"></i>
+          <span class="font-semibold">Tareas por Proyecto</span>
+        </div>
+      </ng-template>
+      <div class="chart-container">
+        <p-chart type="bar" [data]="chartProyectos" [options]="chartProyectosOpts"></p-chart>
+      </div>
+    </p-card>
+  </div>
+</div>

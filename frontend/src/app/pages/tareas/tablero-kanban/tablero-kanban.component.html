@@ -1,0 +1,53 @@
+<p-toolbar styleClass="toolbar-header mb-4">
+  <ng-template pTemplate="left">
+    <i class="pi pi-objects-column mr-2" style="font-size:1.4rem;color:var(--primary-color)"></i>
+    <h2 class="m-0">Tablero Kanban</h2>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <p-dropdown [options]="opcionesProyecto" [(ngModel)]="filtroProyecto"
+                (onChange)="cargar()" placeholder="Todos los proyectos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'250px'}"></p-dropdown>
+  </ng-template>
+</p-toolbar>
+
+<div class="kanban-board">
+  <div *ngFor="let col of columnas" class="kanban-column">
+    <div class="kanban-column-header">
+      <span>
+        <span [style.color]="col.color">●</span> {{ col.titulo }}
+      </span>
+      <p-badge [value]="'' + col.tareas.length"
+               [severity]="col.estado === 'completada' ? 'success' : (col.estado === 'en_progreso' ? 'warning' : 'info')"></p-badge>
+    </div>
+
+    <div cdkDropList [cdkDropListData]="col.tareas"
+         [id]="col.estado"
+         [cdkDropListConnectedTo]="getConnectedLists(col.estado)"
+         (cdkDropListDropped)="drop($event, col.estado)"
+         class="kanban-drop-zone">
+
+      <div *ngFor="let tarea of col.tareas" cdkDrag class="kanban-card">
+        <div class="card-title">{{ tarea.titulo }}</div>
+        <div class="card-meta">
+          <p-tag [value]="tarea.prioridad | titlecase"
+                 [severity]="tarea.prioridad === 'urgente' ? 'danger' : (tarea.prioridad === 'alta' ? 'warning' : (tarea.prioridad === 'media' ? 'info' : 'success'))"
+                 [rounded]="true" styleClass="text-xs"></p-tag>
+          <span *ngIf="tarea.fecha_vencimiento" class="card-date">
+            <i class="pi pi-calendar mr-1"></i>{{ tarea.fecha_vencimiento }}
+          </span>
+          <p-tag *ngIf="tarea.esta_vencida" value="VENCIDA" severity="danger" icon="pi pi-exclamation-triangle"
+                 [rounded]="true" styleClass="text-xs"></p-tag>
+        </div>
+        <div class="card-tags">
+          <p-chip *ngFor="let et of tarea.etiquetas"
+                  [label]="et.nombre"
+                  [style]="{'background': (et.color || '#94a3b8') + '20', 'color': et.color || '#94a3b8', 'font-size': '0.7rem', 'margin-right': '3px'}"
+                  styleClass="chip-sm"></p-chip>
+        </div>
+        <div *ngIf="tarea.nombre_proyecto" class="card-project">
+          {{ tarea.nombre_proyecto }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

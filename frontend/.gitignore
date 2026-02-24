@@ -1,0 +1,34 @@
+# Angular
+node_modules/
+dist/
+.angular/
+.angular/cache/
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Variables de entorno
+.env
+.env.local
+.env*.local
+
+# Testing
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Builds
+build/
+
+# Dependencias locales
+.node-gyp/

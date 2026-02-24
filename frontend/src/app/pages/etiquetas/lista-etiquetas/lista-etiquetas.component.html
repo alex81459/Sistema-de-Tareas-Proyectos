@@ -1,0 +1,57 @@
+<p-toolbar styleClass="toolbar-header mb-4">
+  <ng-template pTemplate="left">
+    <i class="pi pi-tags mr-2" style="font-size:1.4rem;color:var(--primary-color)"></i>
+    <h2 class="m-0 mr-2">Etiquetas</h2>
+    <p-badge [value]="'' + etiquetas.length" severity="info"></p-badge>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Nueva Etiqueta" icon="pi pi-plus" class="p-button-raised" (click)="abrirDialogo()"></button>
+  </ng-template>
+</p-toolbar>
+
+<div *ngIf="etiquetas.length === 0" class="empty-state">
+  <i class="pi pi-tags" style="font-size:3rem;color:var(--text-color-secondary)"></i>
+  <p class="mt-2">No hay etiquetas. Crea tu primera etiqueta.</p>
+</div>
+
+<div class="grid">
+  <div *ngFor="let etiqueta of etiquetas" class="col-12 md:col-6 lg:col-4 xl:col-3">
+    <p-card styleClass="etiqueta-prime-card">
+      <div class="etiqueta-info">
+        <p-avatar [style]="{'background-color': etiqueta.color || '#94a3b8', 'color': '#fff'}" shape="circle" icon="pi pi-tag" size="large"></p-avatar>
+        <div class="ml-3">
+          <div class="etiqueta-nombre font-bold">{{ etiqueta.nombre }}</div>
+          <div class="etiqueta-color text-color-secondary text-sm">{{ etiqueta.color || 'Sin color' }}</div>
+        </div>
+      </div>
+      <div class="etiqueta-acciones mt-3">
+        <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
+                (click)="editar(etiqueta)" pTooltip="Editar" tooltipPosition="top"></button>
+        <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+                (click)="eliminar(etiqueta)" pTooltip="Eliminar" tooltipPosition="top"></button>
+      </div>
+    </p-card>
+  </div>
+</div>
+
+<p-dialog [header]="etiquetaEditar ? 'Editar Etiqueta' : 'Nueva Etiqueta'"
+          [(visible)]="dialogoVisible" [modal]="true" [style]="{width: '400px'}" [draggable]="true" [resizable]="false">
+  <div class="mb-4">
+    <label class="block mb-2 font-medium"><i class="pi pi-tag mr-1"></i>Nombre *</label>
+    <input pInputText [(ngModel)]="form.nombre" class="w-full"
+           placeholder="Nombre de la etiqueta" maxlength="30" />
+  </div>
+  <div class="mb-4">
+    <label class="block mb-2 font-medium"><i class="pi pi-palette mr-1"></i>Color</label>
+    <div class="color-picker-row">
+      <p-colorPicker [(ngModel)]="formColor" [inline]="false"></p-colorPicker>
+      <input pInputText [(ngModel)]="form.color" placeholder="#AABBCC" style="width: 120px;" maxlength="7" />
+    </div>
+  </div>
+  <p-message *ngIf="formError" severity="error" [text]="formError" styleClass="w-full mt-2"></p-message>
+  <ng-template pTemplate="footer">
+    <button pButton label="Cancelar" icon="pi pi-times" class="p-button-text" (click)="dialogoVisible=false"></button>
+    <button pButton [label]="etiquetaEditar ? 'Guardar' : 'Crear'" icon="pi pi-check"
+            (click)="guardar()" [loading]="guardando"></button>
+  </ng-template>
+</p-dialog>
