@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.models.etiqueta import Etiqueta
 from app.schemas import EtiquetaSchema, EtiquetaCrearSchema, EtiquetaActualizarSchema
-from app.utils import verificar_propiedad_etiqueta, obtener_uid
+from app.utils import verificar_propiedad_etiqueta, obtener_uid, obtener_usuario_actual, escritura_requerida, registrar_log
 
 etiquetas_bp = Blueprint("etiquetas", __name__)
 etiqueta_schema = EtiquetaSchema()
@@ -14,12 +14,17 @@ etiquetas_schema = EtiquetaSchema(many=True)
 @jwt_required()
 def listar_etiquetas():
     uid = obtener_uid()
-    etiquetas = Etiqueta.query.filter_by(usuario_id=uid).order_by(Etiqueta.nombre.asc()).all()
+    usuario = obtener_usuario_actual()
+    if usuario.puede_ver_todo:
+        etiquetas = Etiqueta.query.order_by(Etiqueta.nombre.asc()).all()
+    else:
+        etiquetas = Etiqueta.query.filter_by(usuario_id=uid).order_by(Etiqueta.nombre.asc()).all()
     return jsonify(etiquetas_schema.dump(etiquetas)), 200
 
 
 @etiquetas_bp.route("", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def crear_etiqueta():
     uid = obtener_uid()
     data = request.get_json(silent=True) or {}
@@ -38,12 +43,15 @@ def crear_etiqueta():
         color=data.get("color"),
     )
     db.session.add(etiqueta)
+    db.session.flush()
+    registrar_log("etiqueta", "crear_etiqueta", f"Etiqueta '{nombre}' creada", "etiqueta", etiqueta.id)
     db.session.commit()
     return jsonify(etiqueta_schema.dump(etiqueta)), 201
 
 
 @etiquetas_bp.route("/<int:id>", methods=["PUT"])
 @jwt_required()
+@escritura_requerida
 def actualizar_etiqueta(id):
     uid = obtener_uid()
     etiqueta = verificar_propiedad_etiqueta(id, uid)
@@ -73,9 +81,12 @@ def actualizar_etiqueta(id):
 
 @etiquetas_bp.route("/<int:id>", methods=["DELETE"])
 @jwt_required()
+@escritura_requerida
 def eliminar_etiqueta(id):
     uid = obtener_uid()
     etiqueta = verificar_propiedad_etiqueta(id, uid)
+    nombre = etiqueta.nombre
+    registrar_log("etiqueta", "eliminar_etiqueta", f"Etiqueta '{nombre}' (ID {id}) eliminada", "etiqueta", id)
     db.session.delete(etiqueta)
     db.session.commit()
     return jsonify({"mensaje": "Etiqueta eliminada"}), 200

@@ -17,20 +17,21 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
-    # Extensiones
+    #extensiones
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
     ma.init_app(app)
     CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
 
-    # Blueprints
+    #blueprints
     from app.routes.autenticacion import auth_bp
     from app.routes.proyectos import proyectos_bp
     from app.routes.tareas import tareas_bp
     from app.routes.etiquetas import etiquetas_bp
     from app.routes.panel import panel_bp
     from app.routes.usuarios import usuarios_bp
+    from app.routes.auditoria import auditoria_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/v1/autenticacion")
     app.register_blueprint(proyectos_bp, url_prefix="/api/v1/proyectos")
@@ -38,8 +39,9 @@ def create_app(config_class=Config):
     app.register_blueprint(etiquetas_bp, url_prefix="/api/v1/etiquetas")
     app.register_blueprint(panel_bp, url_prefix="/api/v1/panel")
     app.register_blueprint(usuarios_bp, url_prefix="/api/v1/usuarios")
+    app.register_blueprint(auditoria_bp, url_prefix="/api/v1/auditoria")
 
-    # JWT callbacks
+    #JWT
     from app.models.usuario import Usuario
     from app.models.token_actualizacion import TokenActualizacion
 
@@ -62,7 +64,7 @@ def create_app(config_class=Config):
         identity = jwt_data["sub"]
         return Usuario.query.get(int(identity))
 
-    # Error handlers
+    #errores de handlers
     @app.errorhandler(404)
     def not_found(e):
         return {"error": "Recurso no encontrado"}, 404

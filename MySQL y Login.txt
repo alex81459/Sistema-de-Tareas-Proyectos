@@ -6,3 +6,15 @@ MySQL80 servicio Windows
 Usuario Admin Demo
 Correo: demo@ejemplo.com
 Contraseña: Demo1234
+
+Roles del Sistema:
+administrador: acceso total y gestion de usuarios
+jefe: ve todos los recursos, gestiona usuarios solo lectura
+usuario CRUD de sus propios recursos
+visualizador solo lectura de sus propios recursos
+
+Usuarios Seed base:
+  admin@ejemplo.com / Demo1234  
+  jefe@ejemplo.com  / Demo1234  
+  demo@ejemplo.com  / Demo1234  (usuario comun)
+  visor@ejemplo.com / Demo1234  

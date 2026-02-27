@@ -18,6 +18,7 @@ from app.schemas import (
 from app.utils import (
     paginar, verificar_propiedad_proyecto, verificar_propiedad_tarea,
     verificar_propiedad_etiqueta, registrar_actividad, obtener_uid,
+    obtener_usuario_actual, escritura_requerida, registrar_log,
 )
 
 tareas_bp = Blueprint("tareas", __name__)
@@ -36,10 +37,14 @@ actividad_schema = RegistroActividadSchema(many=True)
 @jwt_required()
 def listar_tareas():
     uid = obtener_uid()
+    usuario = obtener_usuario_actual()
 
-    # Solo tareas de proyectos del usuario
-    proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
-    query = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids))
+    #admin o jefe ven todas las tareas el resto solo las de sus proyectos
+    if usuario.puede_ver_todo:
+        query = Tarea.query
+    else:
+        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        query = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids))
 
     # ── Filtros ──
     proyecto_id = request.args.get("proyecto_id", type=int)
@@ -114,6 +119,7 @@ def listar_tareas():
 
 @tareas_bp.route("", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def crear_tarea():
     uid = obtener_uid()
     data = request.get_json(silent=True) or {}
@@ -147,6 +153,7 @@ def crear_tarea():
     db.session.add(tarea)
     db.session.flush()
     registrar_actividad(tarea.id, uid, "creada")
+    registrar_log("tarea", "crear_tarea", f"Tarea '{tarea.titulo}' creada en proyecto {tarea.proyecto_id}", "tarea", tarea.id)
     db.session.commit()
     return jsonify(tarea_schema.dump(tarea)), 201
 
@@ -161,6 +168,7 @@ def obtener_tarea(id):
 
 @tareas_bp.route("/<int:id>", methods=["PUT"])
 @jwt_required()
+@escritura_requerida
 def actualizar_tarea(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
@@ -170,7 +178,7 @@ def actualizar_tarea(id):
     if errores:
         return jsonify({"errores": errores}), 400
 
-    # Si cambia de proyecto, verificar propiedad
+    #si cambia de proyecto verificar propiedad
     if "proyecto_id" in data:
         verificar_propiedad_proyecto(data["proyecto_id"], uid)
 
@@ -184,13 +192,11 @@ def actualizar_tarea(id):
             setattr(tarea, campo, nuevo)
             registrar_actividad(tarea.id, uid, f"cambio_{campo}", viejo, str(nuevo))
 
-    # Estado completada
     if data.get("estado") == "completada" and tarea.completado_en is None:
         tarea.completar()
     elif data.get("estado") and data["estado"] != "completada":
         tarea.completado_en = None
 
-    # Etiquetas
     if "etiquetas_ids" in data:
         etiquetas = Etiqueta.query.filter(
             Etiqueta.id.in_(data["etiquetas_ids"]),
@@ -204,9 +210,12 @@ def actualizar_tarea(id):
 
 @tareas_bp.route("/<int:id>", methods=["DELETE"])
 @jwt_required()
+@escritura_requerida
 def eliminar_tarea(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
+    titulo = tarea.titulo
+    registrar_log("tarea", "eliminar_tarea", f"Tarea '{titulo}' (ID {id}) eliminada", "tarea", id)
     db.session.delete(tarea)
     db.session.commit()
     return jsonify({"mensaje": "Tarea eliminada"}), 200
@@ -214,10 +223,12 @@ def eliminar_tarea(id):
 
 @tareas_bp.route("/<int:id>/completar", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def completar_tarea(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
     registrar_actividad(tarea.id, uid, "completada", tarea.estado, "completada")
+    registrar_log("tarea", "completar_tarea", f"Tarea '{tarea.titulo}' marcada como completada", "tarea", tarea.id)
     tarea.completar()
     db.session.commit()
     return jsonify(tarea_schema.dump(tarea)), 200
@@ -225,6 +236,7 @@ def completar_tarea(id):
 
 @tareas_bp.route("/<int:id>/reabrir", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def reabrir_tarea(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
@@ -234,7 +246,7 @@ def reabrir_tarea(id):
     return jsonify(tarea_schema.dump(tarea)), 200
 
 
-# ── Comentarios ──
+#comentarios
 @tareas_bp.route("/<int:id>/comentarios", methods=["GET"])
 @jwt_required()
 def listar_comentarios(id):
@@ -246,6 +258,7 @@ def listar_comentarios(id):
 
 @tareas_bp.route("/<int:id>/comentarios", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def crear_comentario(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
@@ -265,7 +278,7 @@ def crear_comentario(id):
     return jsonify(comentario_schema.dump(comentario)), 201
 
 
-# ── Checklist ──
+#checklist
 @tareas_bp.route("/<int:id>/checklist", methods=["GET"])
 @jwt_required()
 def listar_checklist(id):
@@ -277,6 +290,7 @@ def listar_checklist(id):
 
 @tareas_bp.route("/<int:id>/checklist", methods=["POST"])
 @jwt_required()
+@escritura_requerida
 def crear_checklist_item(id):
     uid = obtener_uid()
     tarea = verificar_propiedad_tarea(id, uid)
@@ -297,6 +311,7 @@ def crear_checklist_item(id):
 
 @tareas_bp.route("/<int:tarea_id>/checklist/<int:item_id>", methods=["PUT"])
 @jwt_required()
+@escritura_requerida
 def actualizar_checklist_item(tarea_id, item_id):
     uid = obtener_uid()
     verificar_propiedad_tarea(tarea_id, uid)
@@ -312,6 +327,7 @@ def actualizar_checklist_item(tarea_id, item_id):
 
 @tareas_bp.route("/<int:tarea_id>/checklist/<int:item_id>", methods=["DELETE"])
 @jwt_required()
+@escritura_requerida
 def eliminar_checklist_item(tarea_id, item_id):
     uid = obtener_uid()
     verificar_propiedad_tarea(tarea_id, uid)
@@ -321,7 +337,7 @@ def eliminar_checklist_item(tarea_id, item_id):
     return jsonify({"mensaje": "Item eliminado"}), 200
 
 
-# ── Actividad ──
+#actividad
 @tareas_bp.route("/<int:id>/actividad", methods=["GET"])
 @jwt_required()
 def listar_actividad(id):
@@ -332,35 +348,47 @@ def listar_actividad(id):
     return jsonify(actividad_schema.dump(registros)), 200
 
 
-# ── Recordatorios ──
+#recordatorio
 @tareas_bp.route("/recordatorios", methods=["GET"])
 @jwt_required()
 def recordatorios():
     uid = obtener_uid()
+    usuario = obtener_usuario_actual()
     dias = request.args.get("dias", 1, type=int)
     hoy = date.today()
     limite = hoy + timedelta(days=dias)
 
-    proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
-    tareas = Tarea.query.filter(
-        Tarea.proyecto_id.in_(proyectos_ids),
-        Tarea.estado != "completada",
-        Tarea.fecha_vencimiento != None,
-        Tarea.fecha_vencimiento <= limite,
-    ).order_by(Tarea.fecha_vencimiento.asc()).all()
+    if usuario.puede_ver_todo:
+        tareas = Tarea.query.filter(
+            Tarea.estado != "completada",
+            Tarea.fecha_vencimiento != None,
+            Tarea.fecha_vencimiento <= limite,
+        ).order_by(Tarea.fecha_vencimiento.asc()).all()
+    else:
+        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        tareas = Tarea.query.filter(
+            Tarea.proyecto_id.in_(proyectos_ids),
+            Tarea.estado != "completada",
+            Tarea.fecha_vencimiento != None,
+            Tarea.fecha_vencimiento <= limite,
+        ).order_by(Tarea.fecha_vencimiento.asc()).all()
 
     return jsonify(tareas_schema.dump(tareas)), 200
 
 
-# ── Exportar Excel ──
+#exportar a excel
 @tareas_bp.route("/exportar.xlsx", methods=["GET"])
 @jwt_required()
 def exportar_excel():
     uid = obtener_uid()
+    usuario = obtener_usuario_actual()
     from openpyxl import Workbook
 
-    proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
-    tareas = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids)).order_by(Tarea.creado_en.desc()).all()
+    if usuario.puede_ver_todo:
+        tareas = Tarea.query.order_by(Tarea.creado_en.desc()).all()
+    else:
+        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        tareas = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids)).order_by(Tarea.creado_en.desc()).all()
 
     wb = Workbook()
     ws = wb.active

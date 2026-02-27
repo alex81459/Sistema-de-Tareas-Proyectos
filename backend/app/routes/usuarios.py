@@ -3,7 +3,7 @@ from flask_jwt_extended import jwt_required
 from app import db
 from app.models.usuario import Usuario
 from app.schemas import UsuarioAdminSchema, UsuarioCrearAdminSchema, UsuarioActualizarAdminSchema
-from app.utils import admin_requerido, paginar
+from app.utils import rol_requerido, admin_requerido, paginar, registrar_log
 
 usuarios_bp = Blueprint("usuarios", __name__)
 usuario_schema = UsuarioAdminSchema()
@@ -14,9 +14,9 @@ actualizar_schema = UsuarioActualizarAdminSchema()
 
 @usuarios_bp.route("", methods=["GET"])
 @jwt_required()
-@admin_requerido
+@rol_requerido("administrador", "jefe")
 def listar():
-    """Listar usuarios con filtros opcionales (solo admin)."""
+    #listar usuarios admin y jefe
     query = Usuario.query
 
     buscar = request.args.get("buscar", "").strip()
@@ -30,7 +30,7 @@ def listar():
         )
 
     rol = request.args.get("rol")
-    if rol and rol in ("admin", "usuario"):
+    if rol and rol in Usuario.ROLES_VALIDOS:
         query = query.filter_by(rol=rol)
 
     activo = request.args.get("activo")
@@ -48,9 +48,9 @@ def listar():
 
 @usuarios_bp.route("/<int:usuario_id>", methods=["GET"])
 @jwt_required()
-@admin_requerido
+@rol_requerido("administrador", "jefe")
 def obtener(usuario_id):
-    """Obtener detalle de un usuario (solo admin)."""
+    #obtener detalles de un usuario admin y jefe
     usuario = Usuario.query.get(usuario_id)
     if not usuario:
         return jsonify({"error": "Usuario no encontrado"}), 404
@@ -61,7 +61,7 @@ def obtener(usuario_id):
 @jwt_required()
 @admin_requerido
 def crear():
-    """Crear un nuevo usuario desde admin."""
+    #crear un nuevo usuario (solo admin)
     data = request.get_json(silent=True) or {}
     errores = crear_schema.validate(data)
     if errores:
@@ -77,6 +77,11 @@ def crear():
     )
     usuario.set_password(data["contrasena"])
     db.session.add(usuario)
+    db.session.commit()
+
+    registrar_log("usuario", "crear_usuario",
+                  f"Usuario creado: {usuario.correo} (rol: {usuario.rol})",
+                  "usuario", usuario.id)
     db.session.commit()
 
     return jsonify({
@@ -109,9 +114,20 @@ def actualizar(usuario_id):
     if "nombre_completo" in data:
         usuario.nombre_completo = data["nombre_completo"].strip()
     if "rol" in data:
+        rol_anterior = usuario.rol
         usuario.rol = data["rol"]
+        if rol_anterior != data["rol"]:
+            registrar_log("usuario", "cambiar_rol",
+                          f"Rol cambiado de '{rol_anterior}' a '{data['rol']}' para {usuario.correo}",
+                          "usuario", usuario.id)
     if "esta_activo" in data:
+        estado_anterior = usuario.esta_activo
         usuario.esta_activo = data["esta_activo"]
+        if estado_anterior != data["esta_activo"]:
+            accion = "activar_usuario" if data["esta_activo"] else "desactivar_usuario"
+            registrar_log("usuario", accion,
+                          f"Usuario {'activado' if data['esta_activo'] else 'desactivado'}: {usuario.correo}",
+                          "usuario", usuario.id)
 
     db.session.commit()
     return jsonify({
@@ -133,8 +149,15 @@ def eliminar(usuario_id):
     if not usuario:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
+    correo_eliminado = usuario.correo
     db.session.delete(usuario)
     db.session.commit()
+
+    registrar_log("usuario", "eliminar_usuario",
+                  f"Usuario eliminado: {correo_eliminado} (id: {usuario_id})",
+                  "usuario", usuario_id)
+    db.session.commit()
+
     return jsonify({"mensaje": "Usuario eliminado"}), 200
 
 
@@ -154,4 +177,10 @@ def reset_password(usuario_id):
 
     usuario.set_password(nueva)
     db.session.commit()
+
+    registrar_log("usuario", "reset_password",
+                  f"Contraseña restablecida para: {usuario.correo}",
+                  "usuario", usuario.id)
+    db.session.commit()
+
     return jsonify({"mensaje": "Contraseña actualizada exitosamente"}), 200

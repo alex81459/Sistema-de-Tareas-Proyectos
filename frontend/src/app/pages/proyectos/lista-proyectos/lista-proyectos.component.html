@@ -19,7 +19,7 @@
   <p-dropdown [options]="opcionesEstado" [(ngModel)]="filtroEstado"
               (onChange)="cargar()" placeholder="Estado" [showClear]="true"
               optionLabel="label" optionValue="value">
-    <ng-template pTemplate="selectedItem" let-item>
+    <ng-template pTemplate="item" let-item>
       <span><i class="pi pi-circle-fill mr-1" [style.color]="item.value === 'activo' ? '#3b82f6' : '#94a3b8'"></i>{{ item.label }}</span>
     </ng-template>
   </p-dropdown>
@@ -56,15 +56,15 @@
       <td>
         <div class="acciones">
           <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
-                  (click)="editar(proyecto)" pTooltip="Editar"></button>
+                  (click)="editar(proyecto)" pTooltip="Editar" tooltipPosition="top"></button>
           <button *ngIf="proyecto.estado === 'activo'" pButton icon="pi pi-inbox"
                   class="p-button-text p-button-sm p-button-warning"
-                  (click)="archivar(proyecto)" pTooltip="Archivar"></button>
+                  (click)="archivar(proyecto)" pTooltip="Archivar" tooltipPosition="top"></button>
           <button *ngIf="proyecto.estado === 'archivado'" pButton icon="pi pi-replay"
                   class="p-button-text p-button-sm p-button-success"
-                  (click)="restaurar(proyecto)" pTooltip="Restaurar"></button>
+                  (click)="restaurar(proyecto)" pTooltip="Restaurar" tooltipPosition="top"></button>
           <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
-                  (click)="eliminar(proyecto)" pTooltip="Eliminar"></button>
+                  (click)="eliminar(proyecto)" pTooltip="Eliminar" tooltipPosition="top"></button>
         </div>
       </td>
     </tr>

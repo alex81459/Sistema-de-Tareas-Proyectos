@@ -6,7 +6,7 @@
   </ng-template>
   <ng-template pTemplate="right">
     <button pButton label="Exportar Excel" icon="pi pi-file-excel"
-            class="p-button-success p-button-outlined mr-2" (click)="exportar()" pTooltip="Descargar Excel"></button>
+            class="p-button-success p-button-outlined mr-2" (click)="exportar()" pTooltip="Descargar Excel" tooltipPosition="top"></button>
     <button pButton label="Nueva Tarea" icon="pi pi-plus" class="p-button-raised" (click)="abrirDialogo()"></button>
   </ng-template>
 </p-toolbar>
@@ -96,17 +96,17 @@
       <td>
         <div class="acciones">
           <button pButton icon="pi pi-comments" class="p-button-text p-button-sm"
-                  (click)="abrirComentarios(tarea)" pTooltip="Comentarios"></button>
+                  (click)="abrirComentarios(tarea)" pTooltip="Comentarios" tooltipPosition="top"></button>
           <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
-                  (click)="editar(tarea)" pTooltip="Editar"></button>
+                  (click)="editar(tarea)" pTooltip="Editar" tooltipPosition="top"></button>
           <button *ngIf="tarea.estado !== 'completada'" pButton icon="pi pi-check"
                   class="p-button-text p-button-sm p-button-success"
-                  (click)="completar(tarea)" pTooltip="Completar"></button>
+                  (click)="completar(tarea)" pTooltip="Completar" tooltipPosition="top"></button>
           <button *ngIf="tarea.estado === 'completada'" pButton icon="pi pi-replay"
                   class="p-button-text p-button-sm p-button-warning"
-                  (click)="reabrir(tarea)" pTooltip="Reabrir"></button>
+                  (click)="reabrir(tarea)" pTooltip="Reabrir" tooltipPosition="top"></button>
           <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
-                  (click)="eliminar(tarea)" pTooltip="Eliminar"></button>
+                  (click)="eliminar(tarea)" pTooltip="Eliminar" tooltipPosition="top"></button>
         </div>
       </td>
     </tr>

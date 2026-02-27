@@ -20,8 +20,11 @@
       <a routerLink="/app/etiquetas" routerLinkActive="active" pTooltip="Etiquetas" tooltipPosition="right" [tooltipDisabled]="true">
         <i class="pi pi-tags"></i> Etiquetas
       </a>
-      <a *ngIf="authService.esAdmin" routerLink="/app/usuarios" routerLinkActive="active" pTooltip="Usuarios" tooltipPosition="right" [tooltipDisabled]="true">
+      <a *ngIf="authService.puedeVerUsuarios" routerLink="/app/usuarios" routerLinkActive="active" pTooltip="Usuarios" tooltipPosition="right" [tooltipDisabled]="true">
         <i class="pi pi-users"></i> Usuarios
+      </a>
+      <a *ngIf="authService.esAdmin" routerLink="/app/auditoria" routerLinkActive="active" pTooltip="Auditoría" tooltipPosition="right" [tooltipDisabled]="true">
+        <i class="pi pi-shield"></i> Auditoría
       </a>
     </nav>
     <div class="sidebar-footer">
@@ -29,6 +32,7 @@
         <p-avatar icon="pi pi-user" shape="circle" [style]="{'background-color':'#3b82f6','color':'#fff'}"></p-avatar>
         <div class="user-name">
           {{ (authService.usuario$ | async)?.nombre_completo }}
+          <span class="user-rol-badge">{{ (authService.usuario$ | async)?.rol }}</span>
         </div>
       </div>
       <button pButton label="Cerrar Sesión" icon="pi pi-sign-out"

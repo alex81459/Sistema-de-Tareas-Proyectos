@@ -14,6 +14,7 @@ import { InputSwitchModule } from 'primeng/inputswitch';
 import { PasswordModule } from 'primeng/password';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { UsuariosService } from '../../../core/services/usuarios.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { Usuario } from '../../../core/models';
 
 @Component({
@@ -41,8 +42,10 @@ export class ListaUsuariosComponent implements OnInit {
   } = {};
 
   opcionesRol = [
-    { label: 'Admin', value: 'admin' },
-    { label: 'Usuario', value: 'usuario' }
+    { label: 'Administrador', value: 'administrador' },
+    { label: 'Jefe', value: 'jefe' },
+    { label: 'Usuario', value: 'usuario' },
+    { label: 'Visualizador', value: 'visualizador' }
   ];
 
   opcionesActivo = [
@@ -67,8 +70,13 @@ export class ListaUsuariosComponent implements OnInit {
   constructor(
     private usuariosService: UsuariosService,
     private messageService: MessageService,
-    private confirmationService: ConfirmationService
+    private confirmationService: ConfirmationService,
+    public authService: AuthService
   ) {}
+
+  get esAdmin(): boolean {
+    return this.authService.esAdmin;
+  }
 
   ngOnInit(): void {
     this.cargar();
@@ -227,6 +235,36 @@ export class ListaUsuariosComponent implements OnInit {
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Error al cambiar estado' });
       }
     });
+  }
+
+  rolLabel(rol: string): string {
+    const map: Record<string, string> = {
+      'administrador': 'Administrador',
+      'jefe': 'Jefe',
+      'usuario': 'Usuario',
+      'visualizador': 'Visualizador'
+    };
+    return map[rol] || rol;
+  }
+
+  rolSeverity(rol: string): "success" | "secondary" | "info" | "warning" | "danger" | "contrast" | undefined {
+    const map: Record<string, "success" | "secondary" | "info" | "warning" | "danger" | "contrast"> = {
+      'administrador': 'danger',
+      'jefe': 'warning',
+      'usuario': 'info',
+      'visualizador': 'secondary'
+    };
+    return map[rol] || 'info';
+  }
+
+  rolIcon(rol: string): string {
+    const map: Record<string, string> = {
+      'administrador': 'pi pi-shield',
+      'jefe': 'pi pi-star',
+      'usuario': 'pi pi-user',
+      'visualizador': 'pi pi-eye'
+    };
+    return map[rol] || 'pi pi-user';
   }
 
   private formVacio() {

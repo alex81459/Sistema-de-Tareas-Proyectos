@@ -25,7 +25,27 @@ export class AuthService {
   }
 
   get esAdmin(): boolean {
-    return this.usuario?.rol === 'admin';
+    return this.usuario?.rol === 'administrador';
+  }
+
+  get esJefe(): boolean {
+    return this.usuario?.rol === 'jefe';
+  }
+
+  get esVisualizador(): boolean {
+    return this.usuario?.rol === 'visualizador';
+  }
+
+  get puedeEscribir(): boolean {
+    return !!this.usuario && this.usuario.rol !== 'visualizador';
+  }
+
+  get puedeVerUsuarios(): boolean {
+    return this.esAdmin || this.esJefe;
+  }
+
+  get puedeGestionarUsuarios(): boolean {
+    return this.esAdmin;
   }
 
   registrar(data: RegistroRequest): Observable<AuthResponse> {

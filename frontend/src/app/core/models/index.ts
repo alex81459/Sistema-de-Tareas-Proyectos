@@ -1,8 +1,10 @@
+export type Rol = 'administrador' | 'jefe' | 'usuario' | 'visualizador';
+
 export interface Usuario {
   id: number;
   correo: string;
   nombre_completo: string;
-  rol: 'admin' | 'usuario';
+  rol: Rol;
   esta_activo: boolean;
   creado_en: string;
   actualizado_en: string;
@@ -118,12 +120,48 @@ export interface UsuarioCrear {
   correo: string;
   contrasena: string;
   nombre_completo: string;
-  rol?: 'admin' | 'usuario';
+  rol?: Rol;
 }
 
 export interface UsuarioActualizar {
   nombre_completo?: string;
   correo?: string;
-  rol?: 'admin' | 'usuario';
+  rol?: Rol;
   esta_activo?: boolean;
+}
+
+//auditoría de seguridad
+export type CategoriaAuditoria = 'acceso' | 'usuario' | 'proyecto' | 'tarea' | 'etiqueta' | 'sistema';
+
+export interface LogAuditoria {
+  id: number;
+  usuario_id: number | null;
+  usuario_correo: string;
+  categoria: CategoriaAuditoria;
+  accion: string;
+  detalle: string | null;
+  entidad_tipo: string | null;
+  entidad_id: number | null;
+  direccion_ip: string | null;
+  agente_usuario: string | null;
+  creado_en: string;
+}
+
+export interface EstadisticasAuditoria {
+  total: number;
+  eventos_24h: number;
+  eventos_7d: number;
+  logins_fallidos_24h: number;
+  por_categoria: Record<string, number>;
+}
+
+export interface FiltrosAuditoria {
+  categoria?: string;
+  accion?: string;
+  usuario_correo?: string;
+  fecha_desde?: string;
+  fecha_hasta?: string;
+  direccion_ip?: string;
+  pagina?: number;
+  tamano_pagina?: number;
 }

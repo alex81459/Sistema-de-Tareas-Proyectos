@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
-import { adminGuard } from './core/guards/admin.guard';
+import { adminGuard, gestorGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -45,8 +45,13 @@ export const routes: Routes = [
       },
       {
         path: 'usuarios',
-        canActivate: [adminGuard],
+        canActivate: [gestorGuard],
         loadComponent: () => import('./pages/usuarios/lista-usuarios/lista-usuarios.component').then(m => m.ListaUsuariosComponent)
+      },
+      {
+        path: 'auditoria',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./pages/auditoria/auditoria.component').then(m => m.AuditoriaComponent)
       },
       { path: '', redirectTo: 'panel', pathMatch: 'full' }
     ]

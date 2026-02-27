@@ -588,6 +588,14 @@ body.dark-theme {
   color: #e2e8f0;
 }
 
+body.dark-theme .app-main {
+  background: #0f172a;
+}
+
+body.dark-theme .app-content {
+  background: #0f172a;
+}
+
 body.dark-theme .app-topbar {
   background: #1e293b;
   border-bottom-color: #334155;
@@ -663,6 +671,20 @@ body.dark-theme .p-datatable .p-datatable-tbody > tr:hover > td {
 body.dark-theme .toolbar-header.p-toolbar {
   background: #1e293b;
   border-color: #334155;
+}
+
+body.dark-theme .filtros {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+body.dark-theme .tag-count {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-theme .p-progressbar {
+  background: #334155;
 }
 
 body.dark-theme .p-inputtext {
@@ -788,11 +810,11 @@ body.dark-theme .card-custom-header {
 }
 
 body.dark-theme .page-header h2 {
-  color: #f1f5f9;
+  color: #f1f5f9 !important;
 }
 
 body.dark-theme .page-header p {
-  color: #94a3b8;
+  color: #94a3b8 !important;
 }
 
 body.dark-theme .bg-blue-50 { background: #1e3a5f; }
@@ -860,5 +882,83 @@ body.dark-theme ::-webkit-scrollbar-thumb {
 
 body.dark-theme ::-webkit-scrollbar-thumb:hover {
   background: #475569;
+}
+
+/*solucion problema al aparecer X en dropdown*/
+.p-dropdown.p-dropdown-clearable .p-dropdown-label {
+  padding-right: 1.75rem;
+}
+
+.p-dropdown .p-dropdown-clear-icon {
+  color: #94a3b8;
+  right: 2.5rem;
+  font-size: 0.75rem;
+  margin-top: -0.375rem;
+}
+
+.p-dropdown .p-dropdown-clear-icon:hover {
+  color: #ef4444;
+}
+
+body.dark-theme .p-dropdown .p-dropdown-clear-icon {
+  color: #64748b;
+}
+
+body.dark-theme .p-dropdown .p-dropdown-clear-icon:hover {
+  color: #f87171;
+}
+
+/*solucion bugs deforamcion tooltip*/
+.p-tooltip {
+  max-width: none !important;
+  white-space: nowrap !important;
+}
+
+.p-tooltip .p-tooltip-text {
+  white-space: nowrap !important;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.65rem;
+  min-width: max-content;
+}
+
+body.dark-theme .p-tooltip .p-tooltip-text {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-theme .p-tooltip.p-tooltip-top .p-tooltip-arrow {
+  border-top-color: #334155;
+}
+
+body.dark-theme .p-tooltip.p-tooltip-right .p-tooltip-arrow {
+  border-right-color: #334155;
+}
+
+body.dark-theme .p-tooltip.p-tooltip-bottom .p-tooltip-arrow {
+  border-bottom-color: #334155;
+}
+
+body.dark-theme .p-tooltip.p-tooltip-left .p-tooltip-arrow {
+  border-left-color: #334155;
+}
+
+/*auditoria tema oscuro*/
+body.dark-theme .stat-card-audit {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .stat-card-audit .stat-value {
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .stat-card-audit .stat-label {
+  color: #94a3b8 !important;
+}
+
+body.dark-theme .stat-card-audit.alert {
+  background: #450a0a !important;
+  border-color: #991b1b !important;
 }
 

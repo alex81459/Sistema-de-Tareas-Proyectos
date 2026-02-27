@@ -6,7 +6,7 @@ from app import db
 from app.models.proyecto import Proyecto
 from app.models.tarea import Tarea
 from app.models.etiqueta import Etiqueta, tarea_etiquetas
-from app.utils import obtener_uid
+from app.utils import obtener_uid, obtener_usuario_actual
 
 panel_bp = Blueprint("panel", __name__)
 
@@ -15,11 +15,16 @@ panel_bp = Blueprint("panel", __name__)
 @jwt_required()
 def resumen():
     uid = obtener_uid()
+    usuario = obtener_usuario_actual()
     hoy = date.today()
 
-    proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+    #admin o jefe ven estadísticas globales el resto solo las suyas
+    if usuario.puede_ver_todo:
+        proyectos_ids = db.session.query(Proyecto.id).subquery()
+    else:
+        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
 
-    # Conteo por estado
+    #conteo por estado
     conteo_estado = (
         db.session.query(Tarea.estado, func.count(Tarea.id))
         .filter(Tarea.proyecto_id.in_(proyectos_ids))
@@ -28,7 +33,7 @@ def resumen():
     )
     conteo_estado_dict = {estado: conteo for estado, conteo in conteo_estado}
 
-    # Tareas vencidas
+    #tareas vencidas
     vencidas = (
         Tarea.query.filter(
             Tarea.proyecto_id.in_(proyectos_ids),
@@ -38,7 +43,7 @@ def resumen():
         ).count()
     )
 
-    # Próximas a vencer (7 días)
+    #las que venceran en 7 dias
     proximas = (
         Tarea.query.filter(
             Tarea.proyecto_id.in_(proyectos_ids),
@@ -49,8 +54,8 @@ def resumen():
         ).count()
     )
 
-    # Etiquetas más usadas
-    etiquetas_uso = (
+    #etiquetas mas usadas
+    etiquetas_uso_query = (
         db.session.query(
             Etiqueta.id,
             Etiqueta.nombre,
@@ -58,7 +63,11 @@ def resumen():
             func.count(tarea_etiquetas.c.tarea_id).label("total"),
         )
         .join(tarea_etiquetas, Etiqueta.id == tarea_etiquetas.c.etiqueta_id)
-        .filter(Etiqueta.usuario_id == uid)
+    )
+    if not usuario.puede_ver_todo:
+        etiquetas_uso_query = etiquetas_uso_query.filter(Etiqueta.usuario_id == uid)
+    etiquetas_uso = (
+        etiquetas_uso_query
         .group_by(Etiqueta.id)
         .order_by(func.count(tarea_etiquetas.c.tarea_id).desc())
         .limit(10)
@@ -88,8 +97,11 @@ def resumen():
             pass
     completadas_rango = query_completadas.count()
 
-    # Total proyectos
-    total_proyectos = Proyecto.query.filter_by(usuario_id=uid, estado="activo").count()
+    #ttotal proyectos
+    if usuario.puede_ver_todo:
+        total_proyectos = Proyecto.query.filter_by(estado="activo").count()
+    else:
+        total_proyectos = Proyecto.query.filter_by(usuario_id=uid, estado="activo").count()
 
     return jsonify({
         "conteo_por_estado": conteo_estado_dict,
@@ -107,13 +119,17 @@ def resumen():
 @panel_bp.route("/estadisticas-graficas", methods=["GET"])
 @jwt_required()
 def estadisticas_graficas():
-    """Devuelve datos formateados para gráficas del dashboard."""
+    #devuelve datos formateados para graficas
     uid = obtener_uid()
+    usuario = obtener_usuario_actual()
     hoy = date.today()
 
-    proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+    if usuario.puede_ver_todo:
+        proyectos_ids = db.session.query(Proyecto.id).subquery()
+    else:
+        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
 
-    # 1. Tareas por prioridad
+    #1 tareas por prioridad
     conteo_prioridad = (
         db.session.query(Tarea.prioridad, func.count(Tarea.id))
         .filter(Tarea.proyecto_id.in_(proyectos_ids))
@@ -122,7 +138,7 @@ def estadisticas_graficas():
     )
     tareas_por_prioridad = {p: c for p, c in conteo_prioridad}
 
-    # 2. Tareas completadas por semana (últimas 8 semanas)
+    #2 tareas completadas por semana ultimas 8 semanas
     completadas_por_semana = []
     for i in range(7, -1, -1):
         inicio = hoy - timedelta(weeks=i+1)
@@ -139,14 +155,18 @@ def estadisticas_graficas():
             "total": count,
         })
 
-    # 3. Tareas por proyecto (top 6)
-    tareas_por_proyecto = (
+    #3 tareas por proyecto top 6
+    tareas_por_proyecto_query = (
         db.session.query(
             Proyecto.nombre,
             func.count(Tarea.id).label("total"),
         )
         .join(Tarea, Proyecto.id == Tarea.proyecto_id)
-        .filter(Proyecto.usuario_id == uid)
+    )
+    if not usuario.puede_ver_todo:
+        tareas_por_proyecto_query = tareas_por_proyecto_query.filter(Proyecto.usuario_id == uid)
+    tareas_por_proyecto = (
+        tareas_por_proyecto_query
         .group_by(Proyecto.id)
         .order_by(func.count(Tarea.id).desc())
         .limit(6)

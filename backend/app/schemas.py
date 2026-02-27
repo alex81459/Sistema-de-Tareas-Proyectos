@@ -39,7 +39,10 @@ class UsuarioCrearAdminSchema(ma.Schema):
     correo = fields.Email(required=True)
     contrasena = fields.String(required=True, validate=validate.Length(min=8, max=128))
     nombre_completo = fields.String(required=True, validate=validate.Length(min=2, max=150))
-    rol = fields.String(validate=validate.OneOf(["admin", "usuario"]), load_default="usuario")
+    rol = fields.String(
+        validate=validate.OneOf(["administrador", "jefe", "usuario", "visualizador"]),
+        load_default="usuario",
+    )
 
     @validates("contrasena")
     def validar_contrasena(self, value):
@@ -50,7 +53,7 @@ class UsuarioCrearAdminSchema(ma.Schema):
 class UsuarioActualizarAdminSchema(ma.Schema):
     nombre_completo = fields.String(validate=validate.Length(min=2, max=150))
     correo = fields.Email()
-    rol = fields.String(validate=validate.OneOf(["admin", "usuario"]))
+    rol = fields.String(validate=validate.OneOf(["administrador", "jefe", "usuario", "visualizador"]))
     esta_activo = fields.Boolean()
 
 

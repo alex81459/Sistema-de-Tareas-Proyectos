@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -11,7 +11,9 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { ChartModule } from 'primeng/chart';
 import { PanelService, EstadisticasGraficas } from '../../core/services/panel.service';
 import { TareasService } from '../../core/services/tareas.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { ResumenPanel, Tarea } from '../../core/models';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-panel',
@@ -20,12 +22,10 @@ import { ResumenPanel, Tarea } from '../../core/models';
   templateUrl: './panel.component.html',
   styleUrls: ['./panel.component.scss']
 })
-export class PanelComponent implements OnInit {
+export class PanelComponent implements OnInit, OnDestroy {
   resumen: ResumenPanel | null = null;
   recordatorios: Tarea[] = [];
   progresoGeneral = 0;
-
-  // Chart data
   chartPrioridad: any;
   chartPrioridadOpts: any;
   chartSemanal: any;
@@ -35,9 +35,13 @@ export class PanelComponent implements OnInit {
   chartCreadosVsCompletados: any;
   chartCreadosVsCompletadosOpts: any;
 
+  private estadisticas: EstadisticasGraficas | null = null;
+  private themeSub?: Subscription;
+
   constructor(
     private panelService: PanelService,
-    private tareasService: TareasService
+    private tareasService: TareasService,
+    private themeService: ThemeService
   ) {}
 
   ngOnInit(): void {
@@ -50,14 +54,28 @@ export class PanelComponent implements OnInit {
       this.progresoGeneral = total > 0 ? Math.round((completadas / total) * 100) : 0;
     });
     this.tareasService.recordatorios(7).subscribe(res => this.recordatorios = res);
-    this.panelService.obtenerEstadisticasGraficas().subscribe(stats => this.construirGraficas(stats));
+    this.panelService.obtenerEstadisticasGraficas().subscribe(stats => {
+      this.estadisticas = stats;
+      this.construirGraficas(stats);
+    });
+
+    this.themeSub = this.themeService.darkMode$.subscribe(() => {
+      if (this.estadisticas) {
+        this.construirGraficas(this.estadisticas);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.themeSub?.unsubscribe();
   }
 
   private construirGraficas(stats: EstadisticasGraficas): void {
-    const textColor = '#64748b';
-    const gridColor = '#e2e8f0';
+    const dark = this.themeService.isDark;
+    const textColor = dark ? '#94a3b8' : '#64748b';
+    const gridColor = dark ? '#334155' : '#e2e8f0';
 
-    // Doughnut — tareas por prioridad
+    //tareas por prioridad
     this.chartPrioridad = {
       labels: ['Baja', 'Media', 'Alta', 'Urgente'],
       datasets: [{

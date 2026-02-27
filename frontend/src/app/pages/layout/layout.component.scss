@@ -9,6 +9,19 @@
   margin-bottom: 0.5rem;
 }
 
+.user-rol-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+  padding: 0.1rem 0.45rem;
+  border-radius: 6px;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
 .btn-logout {
   color: rgba(255, 255, 255, 0.7) !important;
 }

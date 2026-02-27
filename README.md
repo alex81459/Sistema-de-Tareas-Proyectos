@@ -44,6 +44,28 @@ Con recordar 90 dias de sesion
 - Exportar Excel = descarga en formato .xlsx
 - Recordatorios = panel de tareas proximas a vencer
 
+# Roles y Permisos
+- 4 roles con jerarquía: Administrador > Jefe > Usuario > Visualizador
+- Administrador: acceso total, gestión de usuarios, auditoría
+- Jefe: ve todos los datos, gestiona proyectos y tareas
+- Usuario: gestiona solo sus propios datos
+- Visualizador: solo lectura, sin crear ni editar
+- Guards en frontend (adminGuard, gestorGuard, escrituraGuard)
+- Decoradores en backend (admin_requerido, escritura_requerida, rol_requerido)
+
+# Auditoría de Seguridad
+- Registro automático de accesos (login exitoso/fallido, logout, registro)
+- Registro de cambios sensibles (CRUD usuarios, proyectos, tareas, etiquetas)
+- Cambios de rol, activación/desactivación, reset de contraseña
+- Panel de auditoría con estadísticas (eventos 24h, 7d, logins fallidos)
+- Filtros avanzados por categoría, acción, correo, fecha, IP
+- Tabla paginada con detalle completo (solo visible para Administrador)
+
+# Modo Oscuro
+- Toggle en la barra superior (sol/luna)
+- Estilos dark para sidebar, topbar, tablas, cards, filtros, gráficas y tooltips
+- Persistencia de preferencia en localStorage
+
 # Panel de Control
 - Estadisticas Proyectos activos, tareas pendientes y completadas, vencidas
 - Graficas: 
@@ -110,7 +132,13 @@ ng serve --open
 # Usuario Demo
 Use estas credenciales para probar el sistema:
 Correo:  demo@ejemplo.com
-Contraseña:  Demo1234 
+Contraseña:  Demo1234
+Rol: Administrador (acceso completo)
+
+Usuarios adicionales de prueba (seed):
+- admin@ejemplo.com / Demo1234 (Administrador)
+- jefe@ejemplo.com / Demo1234 (Jefe)
+- visor@ejemplo.com / Demo1234 (Visualizador)
 
 # Reglas de Negocio
 
@@ -122,6 +150,8 @@ Contraseña:  Demo1234
 6. Auditoria todos los cambios se registran automaticamente
 7. Refresh Token Flexible 30 días por defecto 90 dias si marco "Recordar Sesión"
 8. Cascade Delete eliminar proyecto elimina tareas asociadas
+9. Roles Jerárquicos admin y jefe ven todos los datos; usuario solo los propios; visualizador solo lectura
+10. Auditoría de Seguridad toda acción sensible queda registrada con IP, usuario y timestamp
 
 ------------------------------------------------------------------
 
@@ -144,8 +174,6 @@ En versiones proximas se agregarasn las siguientes caracteristicas:
 
 # Seguridad & Autenticacion
 - 2FA (Two-Factor Authentication) Códigos TOTP
-- Roles y Permisos Administrador, Jefe, Usuario, Visualizador
-- Auditoria de Seguridad Logs de accesos y cambios sensibles
 
 # Colaboracion
 - Compartir Proyectos Permisos por usuario (read, edit, admin)
@@ -160,5 +188,4 @@ En versiones proximas se agregarasn las siguientes caracteristicas:
 - Calendario Integrado Vista de tareas por fecha
 
 # UI/UX
-- Modo Oscuro Completo
 - Mejor compatibilidad Movil

@@ -1,0 +1,127 @@
+/*tarjetas de estadisticas estilos */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card-audit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+
+  &.alert {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  i { font-size: 1.3rem; color: #fff; }
+
+  &.bg-blue { background: #3b82f6; }
+  &.bg-green { background: #22c55e; }
+  &.bg-purple { background: #8b5cf6; }
+  &.bg-red { background: #ef4444; }
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-info .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.stat-info .stat-label {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/*filtros */
+.filtros {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: end;
+  background: #fff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.filter-label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.filtros-acciones {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 2px;
+}
+
+/*tablas*/
+.text-fecha {
+  font-size: 0.82rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.text-detalle {
+  font-size: 0.88rem;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-correo {
+  font-size: 0.88rem;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.text-ip {
+  font-size: 0.82rem;
+  color: #64748b;
+  font-family: 'Consolas', 'Courier New', monospace;
+  white-space: nowrap;
+}
+
+::ng-deep .accion-tag .p-tag-value {
+  font-size: 0.78rem !important;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .filtros {
+    flex-direction: column;
+  }
+}

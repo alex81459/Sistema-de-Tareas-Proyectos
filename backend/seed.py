@@ -17,13 +17,44 @@ def seed():
             print("Seed ya ejecutado. Saliendo.")
             return
 
-        #usuario demo
+        Usuario.query.filter_by(rol="admin").update({"rol": "administrador"})
+        db.session.commit()
+
+        #usuario administrador demo
+        admin = Usuario(
+            correo="admin@ejemplo.com",
+            nombre_completo="Admin Demo",
+            rol="administrador",
+        )
+        admin.set_password("Demo1234")
+        db.session.add(admin)
+
+        #usuario jefe demo
+        jefe = Usuario(
+            correo="jefe@ejemplo.com",
+            nombre_completo="Jefe Demo",
+            rol="jefe",
+        )
+        jefe.set_password("Demo1234")
+        db.session.add(jefe)
+
+        #usuario normal demo (administrador por defecto)
         usuario = Usuario(
             correo="demo@ejemplo.com",
             nombre_completo="Usuario Demo",
+            rol="administrador",
         )
         usuario.set_password("Demo1234")
         db.session.add(usuario)
+
+        #usuario visualizador demo
+        visor = Usuario(
+            correo="visor@ejemplo.com",
+            nombre_completo="Visualizador Demo",
+            rol="visualizador",
+        )
+        visor.set_password("Demo1234")
+        db.session.add(visor)
         db.session.flush()
 
         #etiquetas demo
@@ -136,8 +167,15 @@ def seed():
             db.session.add(tarea)
 
         db.session.commit()
+        print("=" * 50)
         print("Seed ejecutado exitosamente!")
-        print("Usuario: demo@ejemplo.com / Demo1234")
+        print("=" * 50)
+        print("Usuarios creados:")
+        print("  Admin:        admin@ejemplo.com / Demo1234  (administrador)")
+        print("  Jefe:         jefe@ejemplo.com  / Demo1234  (jefe)")
+        print("  Usuario:      demo@ejemplo.com  / Demo1234  (usuario)")
+        print("  Visualizador: visor@ejemplo.com / Demo1234  (visualizador)")
+        print("=" * 50)
 
 
 if __name__ == "__main__":

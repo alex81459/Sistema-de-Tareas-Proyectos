@@ -1,0 +1,139 @@
+<p-toolbar styleClass="toolbar-header mb-4">
+  <ng-template pTemplate="left">
+    <i class="pi pi-shield mr-2" style="font-size:1.4rem;color:var(--primary-color)"></i>
+    <h2 class="m-0 mr-2">Auditoría de Seguridad</h2>
+    <p-tag value="{{total}}" severity="info" [rounded]="true" icon="pi pi-hashtag"></p-tag>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Actualizar" icon="pi pi-refresh" class="p-button-outlined"
+            (click)="cargarEstadisticas(); cargar()" pTooltip="Refrescar datos" tooltipPosition="top"></button>
+  </ng-template>
+</p-toolbar>
+
+<div class="stats-grid" *ngIf="estadisticas">
+  <div class="stat-card-audit">
+    <div class="stat-icon bg-blue"><i class="pi pi-database"></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ estadisticas.total | number }}</span>
+      <span class="stat-label">Total eventos</span>
+    </div>
+  </div>
+  <div class="stat-card-audit">
+    <div class="stat-icon bg-green"><i class="pi pi-clock"></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ estadisticas.eventos_24h | number }}</span>
+      <span class="stat-label">Últimas 24h</span>
+    </div>
+  </div>
+  <div class="stat-card-audit">
+    <div class="stat-icon bg-purple"><i class="pi pi-calendar"></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ estadisticas.eventos_7d | number }}</span>
+      <span class="stat-label">Últimos 7 días</span>
+    </div>
+  </div>
+  <div class="stat-card-audit" [class.alert]="estadisticas.logins_fallidos_24h > 5">
+    <div class="stat-icon bg-red"><i class="pi pi-exclamation-triangle"></i></div>
+    <div class="stat-info">
+      <span class="stat-value">{{ estadisticas.logins_fallidos_24h | number }}</span>
+      <span class="stat-label">Logins fallidos (24h)</span>
+    </div>
+  </div>
+</div>
+
+<div class="filtros">
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-filter mr-1"></i>Categoría</label>
+    <p-dropdown [options]="opcionesCategoria" [(ngModel)]="filtros.categoria"
+                (onChange)="pagina=1; cargar()" placeholder="Todas" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'160px'}"></p-dropdown>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-search mr-1"></i>Acción</label>
+    <span class="p-input-icon-left">
+      <i class="pi pi-search"></i>
+      <input pInputText placeholder="Buscar acción..." [(ngModel)]="filtros.accion"
+             (input)="pagina=1; cargar()" style="width: 180px;" />
+    </span>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-user mr-1"></i>Correo</label>
+    <span class="p-input-icon-left">
+      <i class="pi pi-envelope"></i>
+      <input pInputText placeholder="correo@..." [(ngModel)]="filtros.usuario_correo"
+             (input)="pagina=1; cargar()" style="width: 200px;" />
+    </span>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-calendar mr-1"></i>Desde</label>
+    <p-calendar [(ngModel)]="fechaDesde" (onSelect)="pagina=1; cargar()" (onClear)="pagina=1; cargar()"
+                [showClear]="true" dateFormat="dd/mm/yy" placeholder="Fecha inicio"
+                [style]="{width:'160px'}" [inputStyle]="{width:'130px'}"></p-calendar>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-calendar mr-1"></i>Hasta</label>
+    <p-calendar [(ngModel)]="fechaHasta" (onSelect)="pagina=1; cargar()" (onClear)="pagina=1; cargar()"
+                [showClear]="true" dateFormat="dd/mm/yy" placeholder="Fecha fin"
+                [style]="{width:'160px'}" [inputStyle]="{width:'130px'}"></p-calendar>
+  </div>
+  <div>
+    <label class="block mb-1 filter-label"><i class="pi pi-globe mr-1"></i>IP</label>
+    <span class="p-input-icon-left">
+      <i class="pi pi-globe"></i>
+      <input pInputText placeholder="Dirección IP" [(ngModel)]="filtros.direccion_ip"
+             (input)="pagina=1; cargar()" style="width: 150px;" />
+    </span>
+  </div>
+  <div class="filtros-acciones">
+    <button pButton icon="pi pi-filter-slash" class="p-button-outlined p-button-secondary p-button-sm"
+            (click)="limpiarFiltros()" pTooltip="Limpiar filtros" tooltipPosition="top"></button>
+  </div>
+</div>
+
+<p-table [value]="logs" [lazy]="true" [rows]="tamano" [totalRecords]="total"
+         [loading]="cargando" (onLazyLoad)="cargarLazy($event)"
+         [paginator]="true" [rowsPerPageOptions]="[10,25,50,100]"
+         styleClass="p-datatable-sm p-datatable-striped">
+  <ng-template pTemplate="header">
+    <tr>
+      <th style="width:100px">Fecha</th>
+      <th style="width:110px">Categoría</th>
+      <th style="width:160px">Acción</th>
+      <th>Detalle</th>
+      <th style="width:200px">Usuario</th>
+      <th style="width:120px">IP</th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-log>
+    <tr>
+      <td class="text-fecha">{{ log.creado_en | date:'dd/MM/yy HH:mm' }}</td>
+      <td>
+        <p-tag [value]="log.categoria" [severity]="categoriaSeverity(log.categoria)"
+               [rounded]="true" [icon]="categoriaIcon(log.categoria)"></p-tag>
+      </td>
+      <td>
+        <p-tag [value]="accionLabel(log.accion)" [severity]="accionSeverity(log.accion)"
+               [rounded]="true" styleClass="accion-tag"></p-tag>
+      </td>
+      <td class="text-detalle" [pTooltip]="log.detalle || ''" tooltipPosition="top">
+        {{ log.detalle || '—' }}
+      </td>
+      <td class="text-correo">
+        <i class="pi pi-user mr-1" style="color:var(--primary-color);font-size:0.85rem"></i>
+        {{ log.usuario_correo }}
+      </td>
+      <td class="text-ip">
+        <i class="pi pi-globe mr-1" style="color:var(--text-color-secondary);font-size:0.8rem"></i>
+        {{ log.direccion_ip || '—' }}
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage">
+    <tr><td colspan="6">
+      <div class="text-center p-4">
+        <i class="pi pi-shield" style="font-size:2.5rem;color:var(--text-color-secondary)"></i>
+        <p class="mt-2 text-color-secondary">No hay eventos de auditoría que coincidan con los filtros</p>
+      </div>
+    </td></tr>
+  </ng-template>
+</p-table>

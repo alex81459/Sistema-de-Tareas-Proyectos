@@ -5,7 +5,7 @@
     <p-tag value="{{total}}" severity="info" [rounded]="true" icon="pi pi-hashtag"></p-tag>
   </ng-template>
   <ng-template pTemplate="right">
-    <button pButton label="Nuevo Usuario" icon="pi pi-user-plus" class="p-button-raised"
+    <button *ngIf="esAdmin" pButton label="Nuevo Usuario" icon="pi pi-user-plus" class="p-button-raised"
             (click)="abrirDialogo()"></button>
   </ng-template>
 </p-toolbar>
@@ -57,10 +57,10 @@
       </td>
       <td class="text-correo">{{ usuario.correo }}</td>
       <td>
-        <p-tag [value]="usuario.rol === 'admin' ? 'Administrador' : 'Usuario'"
-               [severity]="usuario.rol === 'admin' ? 'danger' : 'info'"
+        <p-tag [value]="rolLabel(usuario.rol)"
+               [severity]="rolSeverity(usuario.rol)"
                [rounded]="true"
-               [icon]="usuario.rol === 'admin' ? 'pi pi-shield' : 'pi pi-user'"></p-tag>
+               [icon]="rolIcon(usuario.rol)"></p-tag>
       </td>
       <td>
         <p-tag [value]="usuario.esta_activo ? 'Activo' : 'Inactivo'"
@@ -71,16 +71,17 @@
       <td class="text-fecha">{{ usuario.creado_en | date:'dd/MM/yyyy' }}</td>
       <td>
         <div class="acciones">
-          <button pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
+          <button *ngIf="esAdmin" pButton icon="pi pi-pencil" class="p-button-text p-button-sm p-button-info"
                   (click)="editar(usuario)" pTooltip="Editar" tooltipPosition="top"></button>
-          <button pButton icon="pi pi-key" class="p-button-text p-button-sm p-button-warning"
+          <button *ngIf="esAdmin" pButton icon="pi pi-key" class="p-button-text p-button-sm p-button-warning"
                   (click)="abrirResetPassword(usuario)" pTooltip="Cambiar contraseña" tooltipPosition="top"></button>
-          <button pButton [icon]="usuario.esta_activo ? 'pi pi-ban' : 'pi pi-check'"
+          <button *ngIf="esAdmin" pButton [icon]="usuario.esta_activo ? 'pi pi-ban' : 'pi pi-check'"
                   [class]="'p-button-text p-button-sm ' + (usuario.esta_activo ? 'p-button-secondary' : 'p-button-success')"
                   (click)="toggleActivo(usuario)"
                   [pTooltip]="usuario.esta_activo ? 'Desactivar' : 'Activar'" tooltipPosition="top"></button>
-          <button pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
+          <button *ngIf="esAdmin" pButton icon="pi pi-trash" class="p-button-text p-button-sm p-button-danger"
                   (click)="eliminar(usuario)" pTooltip="Eliminar" tooltipPosition="top"></button>
+          <span *ngIf="!esAdmin" class="text-color-secondary text-sm"><i class="pi pi-eye mr-1"></i>Solo lectura</span>
         </div>
       </td>
     </tr>

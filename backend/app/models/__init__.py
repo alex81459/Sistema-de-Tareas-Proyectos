@@ -6,6 +6,7 @@ from app.models.token_actualizacion import TokenActualizacion
 from app.models.comentario_tarea import ComentarioTarea
 from app.models.checklist_tarea import ChecklistTarea
 from app.models.registro_actividad import RegistroActividad
+from app.models.log_auditoria import LogAuditoria
 
 __all__ = [
     "Usuario",
@@ -17,4 +18,5 @@ __all__ = [
     "ComentarioTarea",
     "ChecklistTarea",
     "RegistroActividad",
+    "LogAuditoria",
 ]

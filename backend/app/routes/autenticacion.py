@@ -12,6 +12,7 @@ from app import db
 from app.models.usuario import Usuario
 from app.models.token_actualizacion import TokenActualizacion
 from app.schemas import RegistroSchema, LoginSchema, UsuarioSchema
+from app.utils import registrar_log
 import uuid
 
 auth_bp = Blueprint("autenticacion", __name__)
@@ -38,6 +39,10 @@ def registrar():
     db.session.add(usuario)
     db.session.commit()
 
+    registrar_log("acceso", "registro", f"Nuevo usuario registrado: {usuario.correo}",
+                  "usuario", usuario.id, usuario.id, usuario.correo)
+    db.session.commit()
+
     access_token = create_access_token(identity=str(usuario.id))
     jti = str(uuid.uuid4())
     refresh_token = create_refresh_token(identity=str(usuario.id), additional_claims={"jti": jti})
@@ -61,19 +66,31 @@ def iniciar_sesion():
 
     usuario = Usuario.query.filter_by(correo=data["correo"].lower().strip()).first()
     if not usuario or not usuario.check_password(data["contrasena"]):
+        registrar_log("acceso", "login_fallido",
+                      f"Intento fallido para: {data.get('correo', '???')}",
+                      usuario_correo=data.get("correo", "desconocido"))
+        db.session.commit()
         return jsonify({"error": "Credenciales inválidas"}), 401
 
     if not usuario.esta_activo:
+        registrar_log("acceso", "login_cuenta_inactiva",
+                      f"Intento con cuenta desactivada: {usuario.correo}",
+                      "usuario", usuario.id, usuario.id, usuario.correo)
+        db.session.commit()
         return jsonify({"error": "Cuenta desactivada"}), 403
 
     access_token = create_access_token(identity=str(usuario.id))
     jti = str(uuid.uuid4())
     
-    # Si recordarSesion es true, usar una duración extendida para el refresh token
+    #si recordarSesion es true usar una duracion extendida para el refresh token
     recordar_sesion = data.get("recordarSesion", False)
     refresh_token = create_refresh_token(identity=str(usuario.id), additional_claims={"jti": jti})
 
     guardar_refresh_token(usuario.id, jti, recordar_sesion)
+
+    registrar_log("acceso", "login_exitoso", f"Inicio de sesión: {usuario.correo}",
+                  "usuario", usuario.id, usuario.id, usuario.correo)
+    db.session.commit()
 
     return jsonify({
         "usuario": usuario_schema.dump(usuario),
@@ -89,7 +106,7 @@ def actualizar_token():
     claims = get_jwt()
     old_jti = claims.get("jti")
 
-    # Revocar el refresh anterior
+    #revocar el refresh anterior
     token_viejo = TokenActualizacion.query.filter_by(identificador_jti=old_jti).first()
     if token_viejo:
         if token_viejo.revocado:
@@ -121,6 +138,8 @@ def cerrar_sesion():
     if token:
         token.revocado = True
         db.session.commit()
+    registrar_log("acceso", "logout", "Cierre de sesión")
+    db.session.commit()
     return jsonify({"mensaje": "Sesión cerrada"}), 200
 
 
