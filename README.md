@@ -1,10 +1,12 @@
 # Sistema de Tareas y Proyectos (TaskFlowAS)
 Sistema de gestion de tareas y proyectos con autenticacion segura, multi-tenant, control de permisos, filtros avanzados, paginacion, validaciones robustas y reglas de negocio.
 
+<img width="1917" height="926" alt="Captura de pantalla 2026-02-23 215938" src="https://github.com/user-attachments/assets/5d8550e0-4607-40ec-81d2-4e962905517d" />
+
 ## Descripción General
-TaskFlowAS es una solución empresarial para organizar y gestionar proyectos y tareas, permite a los usuarios 
+TaskFlowAS es una solucion para organizar y gestionar proyectos y tareas, permite a los usuarios 
 crear proyectos, definir tareas con diferentes prioridades y estados, implementar checklists, añadir comentarios, 
-registrar actividad de auditoria y visualizar análisis en tiempo real a través de dashboards interactivos.
+registrar actividad de auditoria y visualizar analisis en tiempo real a traves de dashboard
 
 ## Tecnologias
 Frontend - Angular + PrimeNG + TailwindCSS  19+ 
@@ -12,6 +14,8 @@ Backend - Flask + SQLAlchemy + JWT  Python 3.13
 Base de datos - MySQL  8.0.45 
 Contenedores - Docker + Docker Compose  
 Iconos - PrimeIcons v6+ 
+
+<img width="447" height="629" alt="Captura de pantalla 2026-02-23 215924" src="https://github.com/user-attachments/assets/cc89743b-68bf-4a20-9d98-072a33b86322" />
 
 ## Caracteristicas Principales
 # Autenticacion y Sesion
@@ -24,12 +28,17 @@ Con recordar 90 dias de sesion
 - Multi-tenant cada usuario ve solo sus datos
 - Sesion Persistente datos guardados en localStorage
 
+<img width="1642" height="940" alt="Captura de pantalla 2026-02-23 215946" src="https://github.com/user-attachments/assets/475dba4e-a10e-4a35-a28f-26cd670516fd" />
+
 # Proyectos
 - CRUD completo crear, leer, actualizar y eliminar
 - Archivar y restaurar proyectos
 - Filtro por estado activos / archivados
 - Busqueda por nombre
 - Contador de tareas por proyecto
+
+<img width="630" height="706" alt="Captura de pantalla 2026-02-23 220020" src="https://github.com/user-attachments/assets/11fe19f1-4c63-46d5-8ae9-dad0656d32e0" />
+<img width="584" height="400" alt="Captura de pantalla 2026-02-23 220039" src="https://github.com/user-attachments/assets/0fdcf027-13e2-4f9e-ae84-963ac5c88466" />
 
 # Tareas
 - Estados = Pendiente  En Progreso  Completada
@@ -75,6 +84,9 @@ Completadas por semana (Barras)
 Tareas por proyecto (Barras)
 - Etiquetas Mas Usadas: Top 5 con contador
 - Progreso General barra de progreso con porcentaje
+
+<img width="1636" height="939" alt="Captura de pantalla 2026-02-23 220012" src="https://github.com/user-attachments/assets/4edf9bd0-c938-482a-97ca-a539a4293c68" />
+
 
 # Inicio Rápido
 ### Con Docker (Lo Recomiendo para evitar problemas)
