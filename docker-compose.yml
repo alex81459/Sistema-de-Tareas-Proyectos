@@ -6,8 +6,8 @@ services:
     container_name: tareas_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-tareas_proyectos}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
     ports:
@@ -28,10 +28,11 @@ services:
     container_name: tareas_api
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL:-mysql+pymysql://root:root_password@base_datos:3306/tareas_proyectos}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4200,http://localhost}
+      APP_ENV: ${APP_ENV:-development}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      SECRET_KEY: ${SECRET_KEY}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS}
     ports:
       - "5000:5000"
     depends_on:

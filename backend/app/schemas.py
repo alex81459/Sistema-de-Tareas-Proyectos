@@ -1,9 +1,11 @@
 from app import ma
 from app.models.usuario import Usuario
 from app.models.proyecto import Proyecto
+from app.models.miembro_proyecto import MiembroProyecto
 from app.models.tarea import Tarea
 from app.models.etiqueta import Etiqueta
 from app.models.comentario_tarea import ComentarioTarea
+from app.models.mencion_comentario import MencionComentario
 from app.models.checklist_tarea import ChecklistTarea
 from app.models.registro_actividad import RegistroActividad
 from marshmallow import fields, validate, validates, ValidationError, post_dump, EXCLUDE
@@ -89,6 +91,46 @@ class ProyectoSchema(ma.SQLAlchemyAutoSchema):
 
     nombre = fields.String(required=True, validate=validate.Length(min=3, max=80))
     estado = fields.String(dump_only=True)
+    propietario = fields.Method("get_propietario")
+    miembros = fields.Method("get_miembros")
+    permiso_actual = fields.Method("get_permiso_actual")
+    puede_administrar = fields.Method("get_puede_administrar")
+    es_propietario = fields.Method("get_es_propietario")
+
+    def get_propietario(self, obj):
+        if not obj.usuario:
+            return None
+        return {
+            "id": obj.usuario.id,
+            "correo": obj.usuario.correo,
+            "nombre_completo": obj.usuario.nombre_completo,
+        }
+
+    def get_miembros(self, obj):
+        miembros = []
+        for miembro in obj.miembros.order_by(MiembroProyecto.creado_en.asc()).all():
+            if not miembro.usuario:
+                continue
+            miembros.append({
+                "usuario_id": miembro.usuario_id,
+                "correo": miembro.usuario.correo,
+                "nombre_completo": miembro.usuario.nombre_completo,
+                "permiso": miembro.permiso,
+                "creado_en": miembro.creado_en.isoformat() if miembro.creado_en else None,
+            })
+        return miembros
+
+    def get_permiso_actual(self, obj):
+        permiso_actual = getattr(obj, "permiso_actual", None)
+        if permiso_actual:
+            return permiso_actual
+        return "administracion" if getattr(obj, "es_propietario_actual", False) else None
+
+    def get_puede_administrar(self, obj):
+        return bool(getattr(obj, "puede_administrar_actual", False))
+
+    def get_es_propietario(self, obj):
+        return bool(getattr(obj, "es_propietario_actual", False))
 
 
 class ProyectoCrearSchema(ma.Schema):
@@ -99,6 +141,29 @@ class ProyectoCrearSchema(ma.Schema):
 class ProyectoActualizarSchema(ma.Schema):
     nombre = fields.String(validate=validate.Length(min=3, max=80))
     descripcion = fields.String(validate=validate.Length(max=2000))
+
+
+class MiembroProyectoSchema(ma.Schema):
+    usuario_id = fields.Integer(dump_only=True)
+    correo = fields.Email(dump_only=True)
+    nombre_completo = fields.String(dump_only=True)
+    permiso = fields.String(validate=validate.OneOf(MiembroProyecto.PERMISOS_VALIDOS), required=True)
+    creado_en = fields.DateTime(dump_only=True)
+
+
+class MiembroProyectoCrearSchema(ma.Schema):
+    correo = fields.Email(required=True)
+    permiso = fields.String(
+        required=True,
+        validate=validate.OneOf(MiembroProyecto.PERMISOS_VALIDOS),
+    )
+
+
+class MiembroProyectoActualizarSchema(ma.Schema):
+    permiso = fields.String(
+        required=True,
+        validate=validate.OneOf(MiembroProyecto.PERMISOS_VALIDOS),
+    )
 
 
 #Etiquetas
@@ -145,13 +210,24 @@ class TareaSchema(ma.SQLAlchemyAutoSchema):
     etiquetas = fields.Nested(EtiquetaResumenSchema, many=True, dump_only=True)
     esta_vencida = fields.Boolean(dump_only=True)
     nombre_proyecto = fields.Method("get_nombre_proyecto")
+    asignado_a = fields.Method("get_asignado_a")
 
     def get_nombre_proyecto(self, obj):
         return obj.proyecto.nombre if obj.proyecto else None
 
+    def get_asignado_a(self, obj):
+        if not obj.asignado_a:
+            return None
+        return {
+            "id": obj.asignado_a.id,
+            "correo": obj.asignado_a.correo,
+            "nombre_completo": obj.asignado_a.nombre_completo,
+        }
+
 
 class TareaCrearSchema(ma.Schema):
     proyecto_id = fields.Integer(required=True)
+    asignado_a_usuario_id = fields.Integer(allow_none=True, load_default=None)
     titulo = fields.String(required=True, validate=validate.Length(min=3, max=120))
     descripcion = fields.String(validate=validate.Length(max=5000), load_default=None)
     estado = fields.String(
@@ -167,6 +243,7 @@ class TareaCrearSchema(ma.Schema):
 
 
 class TareaActualizarSchema(ma.Schema):
+    asignado_a_usuario_id = fields.Integer(allow_none=True)
     titulo = fields.String(validate=validate.Length(min=3, max=120))
     descripcion = fields.String(validate=validate.Length(max=5000))
     estado = fields.String(validate=validate.OneOf(Tarea.ESTADOS_VALIDOS))
@@ -182,6 +259,30 @@ class ComentarioTareaSchema(ma.SQLAlchemyAutoSchema):
         model = ComentarioTarea
         load_instance = True
         include_fk = True
+
+    autor = fields.Method("get_autor")
+    menciones = fields.Method("get_menciones")
+
+    def get_autor(self, obj):
+        if not obj.usuario:
+            return None
+        return {
+            "id": obj.usuario.id,
+            "correo": obj.usuario.correo,
+            "nombre_completo": obj.usuario.nombre_completo,
+        }
+
+    def get_menciones(self, obj):
+        resultado = []
+        for mencion in obj.menciones.order_by(MencionComentario.creado_en.asc()).all():
+            if not mencion.usuario:
+                continue
+            resultado.append({
+                "usuario_id": mencion.usuario.id,
+                "correo": mencion.usuario.correo,
+                "nombre_completo": mencion.usuario.nombre_completo,
+            })
+        return resultado
 
 
 class ComentarioCrearSchema(ma.Schema):

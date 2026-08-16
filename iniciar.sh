@@ -15,6 +15,22 @@ echo -e "${BLUE}============================================${NC}"
 echo ""
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="$ROOT_DIR/.env"
+ENV_EXAMPLE="$ROOT_DIR/.env.example"
+
+if [ ! -f "$ENV_FILE" ]; then
+    echo -e "${YELLOW}[INFO] No se encontró .env en la raíz del proyecto.${NC}"
+    if [ -f "$ENV_EXAMPLE" ]; then
+        echo "   Copia .env.example a .env y ajusta sus valores antes de iniciar."
+    else
+        echo "   Crea un archivo .env con DATABASE_URL, SECRET_KEY y JWT_SECRET_KEY."
+    fi
+    exit 1
+fi
+
+set -a
+source "$ENV_FILE"
+set +a
 
 # ── Verificar requisitos ──
 echo -e "[1/7] Verificando requisitos..."
@@ -72,7 +88,7 @@ echo "[6/7] Instalando dependencias del frontend..."
 cd "$ROOT_DIR/frontend"
 
 if [ ! -d "node_modules" ]; then
-    npm install
+    npm install --legacy-peer-deps
     echo -e "   ${GREEN}✓${NC} Dependencias del frontend instaladas"
 else
     echo -e "   ${GREEN}✓${NC} node_modules ya existe"
@@ -121,7 +137,7 @@ sleep 3
 
 # Iniciar frontend en segundo plano
 cd "$ROOT_DIR/frontend"
-npx ng serve --open &
+NG_FORCE_AUTOCOMPLETE=0 NG_CLI_ANALYTICS=false npx ng serve --open &
 FRONTEND_PID=$!
 echo "Frontend iniciado (PID: $FRONTEND_PID)"
 

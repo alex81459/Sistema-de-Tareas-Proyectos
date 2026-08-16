@@ -7,6 +7,7 @@ class Tarea(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     proyecto_id = db.Column(db.Integer, db.ForeignKey("proyectos.id"), nullable=False, index=True)
+    asignado_a_usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True, index=True)
     titulo = db.Column(db.String(120), nullable=False)
     descripcion = db.Column(db.Text, nullable=True)
     estado = db.Column(db.String(20), nullable=False, default="pendiente")
@@ -30,6 +31,7 @@ class Tarea(db.Model):
     comentarios = db.relationship("ComentarioTarea", backref="tarea", lazy="dynamic", cascade="all,delete-orphan")
     checklist = db.relationship("ChecklistTarea", backref="tarea", lazy="dynamic", cascade="all,delete-orphan")
     actividad = db.relationship("RegistroActividad", backref="tarea", lazy="dynamic", cascade="all,delete-orphan")
+    asignado_a = db.relationship("Usuario", foreign_keys=[asignado_a_usuario_id], backref=db.backref("tareas_asignadas", lazy="dynamic"))
 
     ESTADOS_VALIDOS = ("pendiente", "en_progreso", "completada")
     PRIORIDADES_VALIDAS = ("baja", "media", "alta", "urgente")

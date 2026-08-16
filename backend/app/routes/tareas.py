@@ -16,9 +16,10 @@ from app.schemas import (
     RegistroActividadSchema,
 )
 from app.utils import (
-    paginar, verificar_propiedad_proyecto, verificar_propiedad_tarea,
+    paginar, verificar_propiedad_proyecto, verificar_acceso_proyecto, verificar_propiedad_tarea,
     verificar_propiedad_etiqueta, registrar_actividad, obtener_uid,
-    obtener_usuario_actual, escritura_requerida, registrar_log,
+    obtener_usuario_actual, escritura_requerida, registrar_log, ids_proyectos_accesibles,
+    validar_usuario_asignado_en_proyecto, crear_menciones_comentario,
 )
 
 tareas_bp = Blueprint("tareas", __name__)
@@ -43,13 +44,13 @@ def listar_tareas():
     if usuario.puede_ver_todo:
         query = Tarea.query
     else:
-        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
-        query = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids))
+        proyectos_ids = ids_proyectos_accesibles(uid)
+        query = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids)) if proyectos_ids else Tarea.query.filter(db.false())
 
     # ── Filtros ──
     proyecto_id = request.args.get("proyecto_id", type=int)
     if proyecto_id:
-        verificar_propiedad_proyecto(proyecto_id, uid)
+        verificar_acceso_proyecto(proyecto_id, uid, "lectura")
         query = query.filter_by(proyecto_id=proyecto_id)
 
     estado = request.args.get("estado")
@@ -81,6 +82,18 @@ def listar_tareas():
             Tarea.fecha_vencimiento < date.today(),
             Tarea.estado != "completada",
         )
+    elif vencida == "false":
+        query = query.filter(
+            or_(
+                Tarea.fecha_vencimiento == None,
+                Tarea.fecha_vencimiento >= date.today(),
+                Tarea.estado == "completada",
+            )
+        )
+
+    asignado_a_usuario_id = request.args.get("asignado_a_usuario_id", type=int)
+    if asignado_a_usuario_id is not None:
+        query = query.filter(Tarea.asignado_a_usuario_id == asignado_a_usuario_id)
 
     fecha_desde = request.args.get("fecha_desde")
     if fecha_desde:
@@ -127,10 +140,12 @@ def crear_tarea():
     if errores:
         return jsonify({"errores": errores}), 400
 
-    verificar_propiedad_proyecto(data["proyecto_id"], uid)
+    proyecto = verificar_acceso_proyecto(data["proyecto_id"], uid, "edicion")
+    usuario_asignado = validar_usuario_asignado_en_proyecto(proyecto, data.get("asignado_a_usuario_id"))
 
     tarea = Tarea(
         proyecto_id=data["proyecto_id"],
+        asignado_a_usuario_id=usuario_asignado.id if usuario_asignado else None,
         titulo=data["titulo"].strip(),
         descripcion=data.get("descripcion"),
         estado=data.get("estado", "pendiente"),
@@ -179,10 +194,15 @@ def actualizar_tarea(id):
         return jsonify({"errores": errores}), 400
 
     #si cambia de proyecto verificar propiedad
+    proyecto_destino = tarea.proyecto
     if "proyecto_id" in data:
-        verificar_propiedad_proyecto(data["proyecto_id"], uid)
+        proyecto_destino = verificar_acceso_proyecto(data["proyecto_id"], uid, "edicion")
 
-    campos = ["titulo", "descripcion", "estado", "prioridad", "fecha_vencimiento", "proyecto_id"]
+    if "asignado_a_usuario_id" in data:
+        usuario_asignado = validar_usuario_asignado_en_proyecto(proyecto_destino, data.get("asignado_a_usuario_id"))
+        data["asignado_a_usuario_id"] = usuario_asignado.id if usuario_asignado else None
+
+    campos = ["titulo", "descripcion", "estado", "prioridad", "fecha_vencimiento", "proyecto_id", "asignado_a_usuario_id"]
     for campo in campos:
         if campo in data:
             viejo = str(getattr(tarea, campo))
@@ -213,7 +233,7 @@ def actualizar_tarea(id):
 @escritura_requerida
 def eliminar_tarea(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
     titulo = tarea.titulo
     registrar_log("tarea", "eliminar_tarea", f"Tarea '{titulo}' (ID {id}) eliminada", "tarea", id)
     db.session.delete(tarea)
@@ -226,7 +246,7 @@ def eliminar_tarea(id):
 @escritura_requerida
 def completar_tarea(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
     registrar_actividad(tarea.id, uid, "completada", tarea.estado, "completada")
     registrar_log("tarea", "completar_tarea", f"Tarea '{tarea.titulo}' marcada como completada", "tarea", tarea.id)
     tarea.completar()
@@ -239,7 +259,7 @@ def completar_tarea(id):
 @escritura_requerida
 def reabrir_tarea(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
     registrar_actividad(tarea.id, uid, "reabierta", tarea.estado, "pendiente")
     tarea.reabrir()
     db.session.commit()
@@ -261,7 +281,7 @@ def listar_comentarios(id):
 @escritura_requerida
 def crear_comentario(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
     data = request.get_json(silent=True) or {}
     errores = ComentarioCrearSchema().validate(data)
     if errores:
@@ -273,7 +293,17 @@ def crear_comentario(id):
         contenido=data["contenido"].strip(),
     )
     db.session.add(comentario)
+    db.session.flush()
+    menciones = crear_menciones_comentario(comentario.id, tarea.proyecto, comentario.contenido)
     registrar_actividad(tarea.id, uid, "comentario_agregado")
+    if menciones:
+        registrar_log(
+            "tarea",
+            "menciones_comentario",
+            f"Comentario con menciones en tarea '{tarea.titulo}': {', '.join(usuario.correo for usuario in menciones)}",
+            "tarea",
+            tarea.id,
+        )
     db.session.commit()
     return jsonify(comentario_schema.dump(comentario)), 201
 
@@ -293,7 +323,7 @@ def listar_checklist(id):
 @escritura_requerida
 def crear_checklist_item(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
     data = request.get_json(silent=True) or {}
     errores = ChecklistCrearSchema().validate(data)
     if errores:
@@ -314,7 +344,7 @@ def crear_checklist_item(id):
 @escritura_requerida
 def actualizar_checklist_item(tarea_id, item_id):
     uid = obtener_uid()
-    verificar_propiedad_tarea(tarea_id, uid)
+    verificar_propiedad_tarea(tarea_id, uid, "edicion")
     item = ChecklistTarea.query.filter_by(id=item_id, tarea_id=tarea_id).first_or_404()
     data = request.get_json(silent=True) or {}
     if "descripcion" in data:
@@ -330,7 +360,7 @@ def actualizar_checklist_item(tarea_id, item_id):
 @escritura_requerida
 def eliminar_checklist_item(tarea_id, item_id):
     uid = obtener_uid()
-    verificar_propiedad_tarea(tarea_id, uid)
+    verificar_propiedad_tarea(tarea_id, uid, "edicion")
     item = ChecklistTarea.query.filter_by(id=item_id, tarea_id=tarea_id).first_or_404()
     db.session.delete(item)
     db.session.commit()
@@ -365,7 +395,7 @@ def recordatorios():
             Tarea.fecha_vencimiento <= limite,
         ).order_by(Tarea.fecha_vencimiento.asc()).all()
     else:
-        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        proyectos_ids = ids_proyectos_accesibles(uid)
         tareas = Tarea.query.filter(
             Tarea.proyecto_id.in_(proyectos_ids),
             Tarea.estado != "completada",
@@ -387,19 +417,20 @@ def exportar_excel():
     if usuario.puede_ver_todo:
         tareas = Tarea.query.order_by(Tarea.creado_en.desc()).all()
     else:
-        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        proyectos_ids = ids_proyectos_accesibles(uid)
         tareas = Tarea.query.filter(Tarea.proyecto_id.in_(proyectos_ids)).order_by(Tarea.creado_en.desc()).all()
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Tareas"
-    ws.append(["ID", "Proyecto", "Título", "Estado", "Prioridad", "Fecha Vencimiento", "Completado En", "Vencida"])
+    ws.append(["ID", "Proyecto", "Título", "Asignado A", "Estado", "Prioridad", "Fecha Vencimiento", "Completado En", "Vencida"])
 
     for t in tareas:
         ws.append([
             t.id,
             t.proyecto.nombre,
             t.titulo,
+            t.asignado_a.nombre_completo if t.asignado_a else "",
             t.estado,
             t.prioridad,
             str(t.fecha_vencimiento) if t.fecha_vencimiento else "",

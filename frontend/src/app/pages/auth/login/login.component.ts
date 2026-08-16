@@ -32,7 +32,8 @@ export class LoginComponent {
   ) {}
 
   iniciarSesion(): void {
-    if (!this.correo || !this.contrasena) {
+    const correo = this.correo.trim();
+    if (!correo || !this.contrasena) {
       this.error = 'Completa todos los campos';
       return;
     }
@@ -40,7 +41,7 @@ export class LoginComponent {
     this.error = '';
 
     this.authService.iniciarSesion({
-      correo: this.correo,
+      correo,
       contrasena: this.contrasena,
       recordarSesion: this.recordarSesion
     }).subscribe({

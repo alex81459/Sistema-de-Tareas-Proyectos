@@ -112,6 +112,12 @@ URLs de Acceso:
 - MySQL: localhost:1219
 
 # Sin Docker (Desarrollo Local y pruebas)
+
+## Opcion rapida con script (Linux/macOS)
+chmod +x iniciar.sh
+./iniciar.sh
+
+## Configuracion manual
 cd backend
 
 1. Crear y activar entorno virtual
@@ -131,6 +137,18 @@ python -c \
    app=create_app(); \
    app.app_context().push(); \
    db.create_all()"
+
+Si ya tenias una base creada antes de la funcionalidad de colaboracion, aplica tambien:
+
+mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_miembros_proyecto.sql
+
+Si ya tenias una base creada antes de la asignacion de tareas a usuarios, aplica tambien:
+
+mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_asignacion_tareas.sql
+
+Si ya tenias una base creada antes de las menciones en comentarios, aplica tambien:
+
+mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_menciones_comentarios.sql
 
 4. Llenar con datos de prueba
 python seed.py
@@ -164,6 +182,9 @@ Usuarios adicionales de prueba (seed):
 8. Cascade Delete eliminar proyecto elimina tareas asociadas
 9. Roles Jerárquicos admin y jefe ven todos los datos; usuario solo los propios; visualizador solo lectura
 10. Auditoría de Seguridad toda acción sensible queda registrada con IP, usuario y timestamp
+11. Colaboración por Proyecto proyectos pueden compartirse con miembros y permisos de lectura, edicion o administracion
+12. Asignación de Tareas tareas pueden asignarse a participantes activos del proyecto
+13. Menciones en Comentarios comentarios aceptan menciones de participantes con formato @[correo@ejemplo.com]
 
 ------------------------------------------------------------------
 

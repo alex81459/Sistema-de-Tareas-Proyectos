@@ -46,6 +46,12 @@
                 placeholder="—" [showClear]="true"
                 optionLabel="label" optionValue="value" [style]="{width:'100px'}"></p-dropdown>
   </div>
+  <div>
+    <label class="block mb-1 filter-label">Asignado a</label>
+    <p-dropdown [options]="opcionesAsignadoFiltro" [(ngModel)]="filtros.asignado_a_usuario_id"
+                (onChange)="cargar()" placeholder="Todos" [showClear]="true"
+                optionLabel="label" optionValue="value" [style]="{width:'250px'}"></p-dropdown>
+  </div>
 </div>
 
 <p-table [value]="tareas" [lazy]="true" [rows]="tamano" [totalRecords]="total"
@@ -58,6 +64,7 @@
       <th>Proyecto</th>
       <th>Estado</th>
       <th>Prioridad</th>
+      <th>Asignado a</th>
       <th>Etiquetas</th>
       <th>Vencimiento</th>
       <th style="width: 210px;">Acciones</th>
@@ -82,6 +89,20 @@
         <p-tag [value]="tarea.prioridad | titlecase"
                [severity]="tarea.prioridad === 'urgente' ? 'danger' : (tarea.prioridad === 'alta' ? 'warning' : (tarea.prioridad === 'media' ? 'info' : 'success'))"
                [rounded]="true"></p-tag>
+      </td>
+      <td>
+        <div class="asignado-bloque">
+          <p-avatar
+            [label]="tarea.asignado_a?.nombre_completo?.charAt(0) || '—'"
+            shape="circle"
+            size="normal"
+            [style]="{'background-color':'#eff6ff','color':'#1d4ed8','width':'30px','height':'30px','font-size':'0.8rem'}">
+          </p-avatar>
+          <div class="asignado-texto">
+            <div class="asignado-nombre">{{ obtenerTextoAsignado(tarea) }}</div>
+            <div *ngIf="tarea.asignado_a?.correo" class="asignado-correo">{{ tarea.asignado_a?.correo }}</div>
+          </div>
+        </div>
       </td>
       <td>
         <p-chip *ngFor="let et of tarea.etiquetas"
@@ -112,7 +133,7 @@
     </tr>
   </ng-template>
   <ng-template pTemplate="emptymessage">
-    <tr><td colspan="7" class="empty-msg">
+    <tr><td colspan="8" class="empty-msg">
       <div class="text-center p-4">
         <i class="pi pi-inbox" style="font-size:2.5rem;color:var(--text-color-secondary)"></i>
         <p class="mt-2 text-color-secondary">No hay tareas que coincidan con los filtros</p>
@@ -127,6 +148,7 @@
     <div class="col-12">
       <label class="block mb-2 font-medium">Proyecto *</label>
       <p-dropdown [options]="opcionesProyecto" [(ngModel)]="form.proyecto_id"
+                  (onChange)="alCambiarProyecto()"
                   placeholder="Seleccionar proyecto" optionLabel="label" optionValue="value"
                   [style]="{width:'100%'}"></p-dropdown>
     </div>
@@ -155,6 +177,12 @@
                   [showClear]="true" [style]="{width:'100%'}" inputStyleClass="w-full"></p-calendar>
     </div>
     <div class="col-6">
+      <label class="block mb-2 font-medium">Asignado a</label>
+      <p-dropdown [options]="opcionesAsignadoA" [(ngModel)]="form.asignado_a_usuario_id"
+                  placeholder="Sin asignar" [showClear]="true"
+                  optionLabel="label" optionValue="value" [style]="{width:'100%'}"></p-dropdown>
+    </div>
+    <div class="col-6">
       <label class="block mb-2 font-medium">Etiquetas</label>
       <p-multiSelect [options]="opcionesEtiqueta" [(ngModel)]="form.etiquetas_ids"
                      optionLabel="label" optionValue="value" placeholder="Seleccionar"
@@ -171,6 +199,22 @@
 
 <p-dialog [header]="'Comentarios — ' + (tareaComentarios?.titulo || '')" [(visible)]="dialogoComentarios" [modal]="true"
           [style]="{width: '560px'}" [draggable]="true" [resizable]="false">
+  <div class="menciones-ayuda">
+    <div class="menciones-texto">
+      Usa menciones con formato <strong>&#64;[correo&#64;ejemplo.com]</strong>.
+    </div>
+    <div class="menciones-sugerencias" *ngIf="sugerenciasMencion.length > 0">
+      <button
+        *ngFor="let sugerencia of sugerenciasMencion"
+        pButton
+        type="button"
+        class="p-button-text p-button-sm"
+        [label]="sugerencia.etiqueta"
+        (click)="insertarMencion(sugerencia.insercion)">
+      </button>
+    </div>
+  </div>
+
   <div class="comment-input-section">
     <textarea pInputTextarea [(ngModel)]="nuevoComentario" class="w-full" rows="2"
               placeholder="Escribe un comentario..." maxlength="5000"></textarea>
@@ -190,9 +234,16 @@
     <div class="comment-header">
       <p-avatar icon="pi pi-user" shape="circle" size="normal"
                 [style]="{'background-color':'#eef2ff','color':'#6366f1','width':'32px','height':'32px','font-size':'0.8rem'}"></p-avatar>
+      <span class="comment-author">{{ c.autor?.nombre_completo || 'Usuario' }}</span>
       <span class="comment-date">{{ c.creado_en | date:'dd/MM/yy HH:mm' }}</span>
     </div>
     <div class="comment-body">{{ c.contenido }}</div>
+    <div *ngIf="c.menciones?.length" class="comment-menciones">
+      <p-chip *ngFor="let mencion of c.menciones"
+              [label]="'Menciona a ' + mencion.nombre_completo"
+              [style]="{'background':'#dbeafe','color':'#1d4ed8'}">
+      </p-chip>
+    </div>
     <hr *ngIf="!last" class="comment-divider">
   </div>
 </p-dialog>

@@ -1,9 +1,32 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, finalize, map, shareReplay, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 let isRefreshing = false;
+let refreshTokenRequest$: Observable<string> | null = null;
+
+function agregarToken(request: HttpRequest<any>, token: string): HttpRequest<any> {
+  return request.clone({
+    setHeaders: { Authorization: `Bearer ${token}` }
+  });
+}
+
+function obtenerRefreshCompartido(authService: AuthService): Observable<string> {
+  if (!refreshTokenRequest$) {
+    isRefreshing = true;
+    refreshTokenRequest$ = authService.actualizarToken().pipe(
+      map(tokens => tokens.access_token),
+      finalize(() => {
+        isRefreshing = false;
+        refreshTokenRequest$ = null;
+      }),
+      shareReplay(1)
+    );
+  }
+
+  return refreshTokenRequest$;
+}
 
 export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: HttpHandlerFn) => {
   const authService = inject(AuthService);
@@ -16,26 +39,21 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
   let authReq = req;
 
   if (token) {
-    authReq = req.clone({
-      setHeaders: { Authorization: `Bearer ${token}` }
-    });
+    authReq = agregarToken(req, token);
   }
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isRefreshing && authService.getRefreshToken()) {
-        isRefreshing = true;
-        return authService.actualizarToken().pipe(
-          switchMap((tokens) => {
-            isRefreshing = false;
-            const retryReq = req.clone({
-              setHeaders: { Authorization: `Bearer ${tokens.access_token}` }
-            });
+      if (error.status === 401 && authService.getRefreshToken()) {
+        return obtenerRefreshCompartido(authService).pipe(
+          switchMap((nuevoAccessToken) => {
+            const retryReq = agregarToken(req, nuevoAccessToken);
             return next(retryReq);
           }),
           catchError((refreshError) => {
-            isRefreshing = false;
-            authService.cerrarSesion();
+            if (isRefreshing || refreshTokenRequest$ === null) {
+              authService.cerrarSesion();
+            }
             return throwError(() => refreshError);
           })
         );

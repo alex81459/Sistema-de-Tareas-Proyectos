@@ -6,7 +6,7 @@ from app import db
 from app.models.proyecto import Proyecto
 from app.models.tarea import Tarea
 from app.models.etiqueta import Etiqueta, tarea_etiquetas
-from app.utils import obtener_uid, obtener_usuario_actual
+from app.utils import obtener_uid, obtener_usuario_actual, ids_proyectos_accesibles
 
 panel_bp = Blueprint("panel", __name__)
 
@@ -22,7 +22,7 @@ def resumen():
     if usuario.puede_ver_todo:
         proyectos_ids = db.session.query(Proyecto.id).subquery()
     else:
-        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        proyectos_ids = ids_proyectos_accesibles(uid)
 
     #conteo por estado
     conteo_estado = (
@@ -101,7 +101,10 @@ def resumen():
     if usuario.puede_ver_todo:
         total_proyectos = Proyecto.query.filter_by(estado="activo").count()
     else:
-        total_proyectos = Proyecto.query.filter_by(usuario_id=uid, estado="activo").count()
+        total_proyectos = Proyecto.query.filter(
+            Proyecto.id.in_(proyectos_ids),
+            Proyecto.estado == "activo",
+        ).count()
 
     return jsonify({
         "conteo_por_estado": conteo_estado_dict,
@@ -127,7 +130,7 @@ def estadisticas_graficas():
     if usuario.puede_ver_todo:
         proyectos_ids = db.session.query(Proyecto.id).subquery()
     else:
-        proyectos_ids = db.session.query(Proyecto.id).filter_by(usuario_id=uid).subquery()
+        proyectos_ids = ids_proyectos_accesibles(uid)
 
     #1 tareas por prioridad
     conteo_prioridad = (
@@ -164,7 +167,7 @@ def estadisticas_graficas():
         .join(Tarea, Proyecto.id == Tarea.proyecto_id)
     )
     if not usuario.puede_ver_todo:
-        tareas_por_proyecto_query = tareas_por_proyecto_query.filter(Proyecto.usuario_id == uid)
+        tareas_por_proyecto_query = tareas_por_proyecto_query.filter(Proyecto.id.in_(proyectos_ids))
     tareas_por_proyecto = (
         tareas_por_proyecto_query
         .group_by(Proyecto.id)

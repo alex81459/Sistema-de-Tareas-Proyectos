@@ -19,6 +19,7 @@ class Proyecto(db.Model):
     )
 
     tareas = db.relationship("Tarea", backref="proyecto", lazy="dynamic", cascade="all,delete-orphan")
+    miembros = db.relationship("MiembroProyecto", backref="proyecto", lazy="dynamic", cascade="all,delete-orphan")
 
     __table_args__ = (
         db.Index("idx_proyectos_nombre_ft", "nombre", mysql_prefix="FULLTEXT"),

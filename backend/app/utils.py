@@ -1,13 +1,25 @@
 from functools import wraps
+import re
 from flask import abort, jsonify, request as flask_request
 from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from app.models.proyecto import Proyecto
+from app.models.miembro_proyecto import MiembroProyecto
 from app.models.tarea import Tarea
 from app.models.etiqueta import Etiqueta
+from app.models.usuario import Usuario
 from app.models.registro_actividad import RegistroActividad
 from app.models.log_auditoria import LogAuditoria
+from app.models.mencion_comentario import MencionComentario
 from app import db
 from datetime import datetime, timezone
+
+NIVELES_PERMISO_PROYECTO = {
+    "lectura": 1,
+    "edicion": 2,
+    "administracion": 3,
+}
+
+PATRON_MENCION_COMENTARIO = re.compile(r"@\[([^\]]+)\]")
 
 
 def obtener_uid() -> int:
@@ -61,21 +73,131 @@ def paginar(query, pagina: int = 1, tamano_pagina: int = 20):
     }
 
 
-def verificar_propiedad_proyecto(proyecto_id: int, usuario_id: int) -> Proyecto:
-    """Verifica que el proyecto exista. Admin/Jefe acceden a cualquiera; el resto solo a los suyos."""
+def obtener_membresia_proyecto(proyecto_id: int, usuario_id: int):
+    return MiembroProyecto.query.filter_by(proyecto_id=proyecto_id, usuario_id=usuario_id).first()
+
+
+def obtener_permiso_en_proyecto(proyecto: Proyecto, usuario) -> str | None:
+    if not proyecto or not usuario:
+        return None
+    if usuario.puede_ver_todo:
+        return "administracion"
+    if proyecto.usuario_id == usuario.id:
+        return "administracion"
+    membresia = obtener_membresia_proyecto(proyecto.id, usuario.id)
+    return membresia.permiso if membresia else None
+
+
+def obtener_participantes_proyecto(proyecto: Proyecto):
+    participantes = {}
+
+    propietario = Usuario.query.get(proyecto.usuario_id)
+    if propietario and propietario.esta_activo:
+        participantes[propietario.id] = propietario
+
+    for miembro in proyecto.miembros.all():
+        if miembro.usuario and miembro.usuario.esta_activo:
+            participantes[miembro.usuario.id] = miembro.usuario
+
+    return list(participantes.values())
+
+
+def validar_usuario_asignado_en_proyecto(proyecto: Proyecto, asignado_a_usuario_id):
+    if asignado_a_usuario_id is None:
+        return None
+
+    usuario = Usuario.query.get(asignado_a_usuario_id)
+    if not usuario or not usuario.esta_activo:
+        abort(400, description="El usuario asignado no existe o está inactivo")
+
+    participantes = {participante.id for participante in obtener_participantes_proyecto(proyecto)}
+    if asignado_a_usuario_id not in participantes:
+        abort(400, description="Solo puedes asignar tareas a participantes del proyecto")
+
+    return usuario
+
+
+def extraer_correos_mencionados(contenido: str):
+    return [correo.strip().lower() for correo in PATRON_MENCION_COMENTARIO.findall(contenido or "")]
+
+
+def crear_menciones_comentario(comentario_id: int, proyecto: Proyecto, contenido: str):
+    correos_mencionados = extraer_correos_mencionados(contenido)
+    if not correos_mencionados:
+        return []
+
+    participantes = {
+        participante.correo.lower(): participante
+        for participante in obtener_participantes_proyecto(proyecto)
+    }
+
+    menciones_creadas = []
+    correos_vistos = set()
+    for correo in correos_mencionados:
+        if correo in correos_vistos:
+            continue
+        correos_vistos.add(correo)
+
+        usuario = participantes.get(correo)
+        if not usuario:
+            abort(400, description=f"La mención @{correo} no pertenece a un participante del proyecto")
+
+        mencion = MencionComentario(
+            comentario_id=comentario_id,
+            usuario_id=usuario.id,
+        )
+        db.session.add(mencion)
+        menciones_creadas.append(usuario)
+
+    return menciones_creadas
+
+
+def enriquecer_proyecto_con_acceso(proyecto: Proyecto, usuario):
+    permiso = obtener_permiso_en_proyecto(proyecto, usuario)
+    proyecto.permiso_actual = permiso
+    proyecto.es_propietario_actual = bool(usuario and proyecto.usuario_id == usuario.id)
+    proyecto.puede_administrar_actual = permiso == "administracion"
+    return proyecto
+
+
+def ids_proyectos_accesibles(usuario_id: int):
+    from app.models.usuario import Usuario
+    usuario = Usuario.query.get(usuario_id)
+    if not usuario:
+        return []
+    if usuario.puede_ver_todo:
+        return [fila.id for fila in db.session.query(Proyecto.id).all()]
+
+    propios = {
+        fila.id for fila in db.session.query(Proyecto.id).filter_by(usuario_id=usuario_id).all()
+    }
+    compartidos = {
+        fila.proyecto_id
+        for fila in db.session.query(MiembroProyecto.proyecto_id).filter_by(usuario_id=usuario_id).all()
+    }
+    return list(propios | compartidos)
+
+
+def verificar_acceso_proyecto(proyecto_id: int, usuario_id: int, permiso_requerido: str = "lectura") -> Proyecto:
+    """Verifica que el usuario pueda acceder al proyecto con el permiso solicitado."""
     from app.models.usuario import Usuario
     proyecto = Proyecto.query.get(proyecto_id)
     if not proyecto:
         abort(404, description="Proyecto no encontrado")
     usuario = Usuario.query.get(usuario_id)
-    if usuario and usuario.puede_ver_todo:
-        return proyecto
-    if proyecto.usuario_id != usuario_id:
+    permiso_actual = obtener_permiso_en_proyecto(proyecto, usuario)
+    if not permiso_actual:
         abort(404, description="Proyecto no encontrado")
-    return proyecto
+    if NIVELES_PERMISO_PROYECTO[permiso_actual] < NIVELES_PERMISO_PROYECTO[permiso_requerido]:
+        abort(403, description="Acceso denegado: permisos insuficientes")
+    return enriquecer_proyecto_con_acceso(proyecto, usuario)
 
 
-def verificar_propiedad_tarea(tarea_id: int, usuario_id: int) -> Tarea:
+def verificar_propiedad_proyecto(proyecto_id: int, usuario_id: int) -> Proyecto:
+    return verificar_acceso_proyecto(proyecto_id, usuario_id, "lectura")
+
+
+def verificar_propiedad_tarea(tarea_id: int, usuario_id: int, permiso_requerido: str = "lectura") -> Tarea:
     #verifica sea admin o jefe acceden a cualquiera, restringuidos a sus tareas
     from app.models.usuario import Usuario
     tarea = Tarea.query.get(tarea_id)
@@ -84,8 +206,8 @@ def verificar_propiedad_tarea(tarea_id: int, usuario_id: int) -> Tarea:
     usuario = Usuario.query.get(usuario_id)
     if usuario and usuario.puede_ver_todo:
         return tarea
-    proyecto = Proyecto.query.get(tarea.proyecto_id)
-    if not proyecto or proyecto.usuario_id != usuario_id:
+    proyecto = verificar_acceso_proyecto(tarea.proyecto_id, usuario_id, permiso_requerido)
+    if not proyecto:
         abort(404, description="Tarea no encontrada")
     return tarea
 

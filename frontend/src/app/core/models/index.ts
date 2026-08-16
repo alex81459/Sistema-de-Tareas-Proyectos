@@ -35,8 +35,29 @@ export interface Proyecto {
   nombre: string;
   descripcion: string | null;
   estado: 'activo' | 'archivado';
+  propietario?: PropietarioProyecto | null;
+  miembros?: MiembroProyecto[];
+  permiso_actual?: PermisoProyecto | null;
+  puede_administrar?: boolean;
+  es_propietario?: boolean;
   creado_en: string;
   actualizado_en: string;
+}
+
+export type PermisoProyecto = 'lectura' | 'edicion' | 'administracion';
+
+export interface PropietarioProyecto {
+  id: number;
+  correo: string;
+  nombre_completo: string;
+}
+
+export interface MiembroProyecto {
+  usuario_id: number;
+  correo: string;
+  nombre_completo: string;
+  permiso: PermisoProyecto;
+  creado_en: string;
 }
 
 export interface ProyectoCrear {
@@ -44,9 +65,15 @@ export interface ProyectoCrear {
   descripcion?: string;
 }
 
+export interface MiembroProyectoCrear {
+  correo: string;
+  permiso: PermisoProyecto;
+}
+
 export interface Tarea {
   id: number;
   proyecto_id: number;
+  asignado_a_usuario_id?: number | null;
   titulo: string;
   descripcion: string | null;
   estado: 'pendiente' | 'en_progreso' | 'completada';
@@ -55,6 +82,7 @@ export interface Tarea {
   completado_en: string | null;
   esta_vencida: boolean;
   nombre_proyecto: string | null;
+  asignado_a: UsuarioResumen | null;
   etiquetas: Etiqueta[];
   creado_en: string;
   actualizado_en: string;
@@ -62,12 +90,19 @@ export interface Tarea {
 
 export interface TareaCrear {
   proyecto_id: number;
+  asignado_a_usuario_id?: number | null;
   titulo: string;
   descripcion?: string;
   estado?: string;
   prioridad?: string;
   fecha_vencimiento?: string | null;
   etiquetas_ids?: number[];
+}
+
+export interface UsuarioResumen {
+  id: number;
+  correo: string;
+  nombre_completo: string;
 }
 
 export interface Etiqueta {
@@ -105,6 +140,8 @@ export interface Comentario {
   tarea_id: number;
   usuario_id: number;
   contenido: string;
+  autor: UsuarioResumen | null;
+  menciones: UsuarioResumen[];
   creado_en: string;
 }
 

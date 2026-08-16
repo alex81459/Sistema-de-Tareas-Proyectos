@@ -11,5 +11,8 @@ class ComentarioTarea(db.Model):
     contenido = db.Column(db.Text, nullable=False)
     creado_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
+    usuario = db.relationship("Usuario", backref=db.backref("comentarios_tarea", lazy="dynamic"))
+    menciones = db.relationship("MencionComentario", backref="comentario", lazy="dynamic", cascade="all,delete-orphan")
+
     def __repr__(self):
         return f"<ComentarioTarea {self.id}>"

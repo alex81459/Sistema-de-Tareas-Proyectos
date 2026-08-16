@@ -22,10 +22,60 @@ h2 {
   color: #64748b;
 }
 
+.mb-0 {
+  margin-bottom: 0;
+}
+
 .tasks-title {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 1rem;
+}
+
+.miembros-bloque {
+  margin-bottom: 2rem;
+}
+
+.miembros-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.propietario-card,
+.miembro-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  margin-bottom: 0.75rem;
+}
+
+.agregar-miembro {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 180px auto;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.correo-miembro {
+  width: 100%;
+}
+
+.miembro-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.miembros-vacio {
+  padding: 1.5rem;
 }
 
 .empty-state {
@@ -78,4 +128,28 @@ h2 {
   font-size: 0.75rem;
   color: #64748b;
   margin-top: 0.25rem;
+}
+
+@media (max-width: 768px) {
+  .detail-header,
+  .task-row,
+  .propietario-card,
+  .miembro-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .agregar-miembro {
+    grid-template-columns: 1fr;
+  }
+
+  .miembro-acciones {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .task-right {
+    text-align: left;
+    width: 100%;
+  }
 }

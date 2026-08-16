@@ -5,18 +5,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "clave-secreta-dev-cambiar")
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL",
-        "mysql+pymysql://root:T1R6C%4052G3ty8VGIwn%23MJIu5%3D@localhost:1219/tareas_proyectos"
-    )
+    APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_recycle": 280,
         "pool_pre_ping": True,
     }
 
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-clave-secreta-dev")
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     JWT_TOKEN_LOCATION = ["headers"]
@@ -24,3 +22,21 @@ class Config:
     JWT_HEADER_TYPE = "Bearer"
 
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
+
+    @classmethod
+    def validate(cls):
+        required_settings = {
+            "DATABASE_URL": cls.SQLALCHEMY_DATABASE_URI,
+            "SECRET_KEY": cls.SECRET_KEY,
+            "JWT_SECRET_KEY": cls.JWT_SECRET_KEY,
+        }
+        missing = [name for name, value in required_settings.items() if not value]
+        if missing:
+            missing_values = ", ".join(sorted(missing))
+            raise RuntimeError(
+                "Faltan variables de entorno requeridas: "
+                f"{missing_values}. Copia .env.example a .env y completa sus valores."
+            )
+
+        if cls.APP_ENV == "production" and not cls.CORS_ORIGINS:
+            raise RuntimeError("CORS_ORIGINS es obligatoria cuando APP_ENV=production.")

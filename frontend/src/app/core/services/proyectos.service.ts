@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@env/environment';
-import { Proyecto, ProyectoCrear, Paginacion } from '../models';
+import { Proyecto, ProyectoCrear, Paginacion, MiembroProyecto, MiembroProyectoCrear, PermisoProyecto } from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class ProyectosService {
@@ -49,5 +49,21 @@ export class ProyectosService {
 
   restaurar(id: number): Observable<Proyecto> {
     return this.http.post<Proyecto>(`${this.apiUrl}/${id}/restaurar`, {});
+  }
+
+  listarMiembros(id: number): Observable<MiembroProyecto[]> {
+    return this.http.get<MiembroProyecto[]>(`${this.apiUrl}/${id}/miembros`);
+  }
+
+  agregarMiembro(id: number, data: MiembroProyectoCrear): Observable<MiembroProyecto> {
+    return this.http.post<MiembroProyecto>(`${this.apiUrl}/${id}/miembros`, data);
+  }
+
+  actualizarMiembro(id: number, usuarioId: number, permiso: PermisoProyecto): Observable<MiembroProyecto> {
+    return this.http.put<MiembroProyecto>(`${this.apiUrl}/${id}/miembros/${usuarioId}`, { permiso });
+  }
+
+  eliminarMiembro(id: number, usuarioId: number): Observable<{ mensaje: string }> {
+    return this.http.delete<{ mensaje: string }>(`${this.apiUrl}/${id}/miembros/${usuarioId}`);
   }
 }

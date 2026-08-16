@@ -14,6 +14,7 @@ ma = Marshmallow()
 
 
 def create_app(config_class=Config):
+    config_class.validate()
     app = Flask(__name__)
     app.config.from_object(config_class)
 
@@ -68,6 +69,10 @@ def create_app(config_class=Config):
     @app.errorhandler(404)
     def not_found(e):
         return {"error": "Recurso no encontrado"}, 404
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return {"error": getattr(e, "description", "Acceso denegado")}, 403
 
     @app.errorhandler(422)
     def unprocessable(e):

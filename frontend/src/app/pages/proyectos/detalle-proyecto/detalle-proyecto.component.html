@@ -13,6 +13,77 @@
 
   <p-divider></p-divider>
 
+  <div class="miembros-bloque">
+    <div class="miembros-encabezado">
+      <div>
+        <h3 class="tasks-title">
+          <i class="pi pi-users mr-2"></i>Colaboradores
+          <p-badge [value]="(miembros.length + 1).toString()" severity="contrast" styleClass="ml-2"></p-badge>
+        </h3>
+        <p class="desc mb-0">Propietario y miembros con acceso al proyecto</p>
+      </div>
+    </div>
+
+    <div class="propietario-card" *ngIf="proyecto.propietario as propietario">
+      <div>
+        <div class="task-title">{{ propietario.nombre_completo }}</div>
+        <div class="task-desc">{{ propietario.correo }}</div>
+      </div>
+      <p-tag value="Propietario" severity="success" [rounded]="true"></p-tag>
+    </div>
+
+    <div *ngIf="puedeAdministrar" class="agregar-miembro">
+      <input
+        pInputText
+        [(ngModel)]="formularioMiembro.correo"
+        placeholder="correo@ejemplo.com"
+        class="correo-miembro"
+      />
+      <p-dropdown
+        [options]="opcionesPermiso"
+        [(ngModel)]="formularioMiembro.permiso"
+        optionLabel="label"
+        optionValue="value"
+      ></p-dropdown>
+      <button pButton label="Agregar" icon="pi pi-user-plus" (click)="agregarMiembro()" [loading]="guardandoMiembro"></button>
+    </div>
+
+    <p-message *ngIf="errorMiembro" severity="error" [text]="errorMiembro" styleClass="w-full mb-3"></p-message>
+
+    <div *ngIf="!cargandoMiembros && miembros.length === 0" class="empty-state miembros-vacio">
+      <i class="pi pi-users" style="font-size: 2.2rem; color: #94a3b8;"></i>
+      <p class="mt-2">Todavía no hay miembros compartidos</p>
+    </div>
+
+    <div *ngFor="let miembro of miembros" class="miembro-card">
+      <div>
+        <div class="task-title">{{ miembro.nombre_completo }}</div>
+        <div class="task-desc">{{ miembro.correo }}</div>
+      </div>
+      <div class="miembro-acciones">
+        <p-dropdown
+          *ngIf="puedeAdministrar"
+          [options]="opcionesPermiso"
+          [ngModel]="miembro.permiso"
+          (ngModelChange)="cambiarPermiso(miembro, $event)"
+          optionLabel="label"
+          optionValue="value"
+        ></p-dropdown>
+        <p-tag *ngIf="!puedeAdministrar" [value]="miembro.permiso" severity="info" [rounded]="true"></p-tag>
+        <button
+          *ngIf="puedeAdministrar"
+          pButton
+          icon="pi pi-user-minus"
+          class="p-button-text p-button-danger"
+          (click)="quitarMiembro(miembro)"
+          pTooltip="Quitar acceso"
+        ></button>
+      </div>
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
   <h3 class="tasks-title">
     <i class="pi pi-list mr-2"></i>Tareas del Proyecto
     <p-badge [value]="tareas.length.toString()" severity="info" styleClass="ml-2"></p-badge>

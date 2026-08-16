@@ -24,6 +24,8 @@ usuario_schema = UsuarioSchema()
 @auth_bp.route("/registrar", methods=["POST"])
 def registrar():
     data = request.get_json(silent=True) or {}
+    if isinstance(data.get("correo"), str):
+        data["correo"] = data["correo"].strip()
     errores = registro_schema.validate(data)
     if errores:
         return jsonify({"errores": errores}), 400
@@ -43,11 +45,7 @@ def registrar():
                   "usuario", usuario.id, usuario.id, usuario.correo)
     db.session.commit()
 
-    access_token = create_access_token(identity=str(usuario.id))
-    jti = str(uuid.uuid4())
-    refresh_token = create_refresh_token(identity=str(usuario.id), additional_claims={"jti": jti})
-
-    guardar_refresh_token(usuario.id, jti, False)
+    access_token, refresh_token, _ = emitir_tokens(usuario.id, False)
 
     return jsonify({
         "mensaje": "Usuario registrado exitosamente",
@@ -60,6 +58,8 @@ def registrar():
 @auth_bp.route("/iniciar-sesion", methods=["POST"])
 def iniciar_sesion():
     data = request.get_json(silent=True) or {}
+    if isinstance(data.get("correo"), str):
+        data["correo"] = data["correo"].strip()
     errores = login_schema.validate(data)
     if errores:
         return jsonify({"errores": errores}), 400
@@ -79,14 +79,8 @@ def iniciar_sesion():
         db.session.commit()
         return jsonify({"error": "Cuenta desactivada"}), 403
 
-    access_token = create_access_token(identity=str(usuario.id))
-    jti = str(uuid.uuid4())
-    
-    #si recordarSesion es true usar una duracion extendida para el refresh token
     recordar_sesion = data.get("recordarSesion", False)
-    refresh_token = create_refresh_token(identity=str(usuario.id), additional_claims={"jti": jti})
-
-    guardar_refresh_token(usuario.id, jti, recordar_sesion)
+    access_token, refresh_token, _ = emitir_tokens(usuario.id, recordar_sesion)
 
     registrar_log("acceso", "login_exitoso", f"Inicio de sesión: {usuario.correo}",
                   "usuario", usuario.id, usuario.id, usuario.correo)
@@ -105,24 +99,28 @@ def actualizar_token():
     identity = get_jwt_identity()
     claims = get_jwt()
     old_jti = claims.get("jti")
+    recordar_sesion = False
 
     #revocar el refresh anterior
     token_viejo = TokenActualizacion.query.filter_by(identificador_jti=old_jti).first()
+    if not token_viejo:
+        return jsonify({"error": "Token de actualización no reconocido"}), 401
+
+    if token_viejo.expira_en <= datetime.now(timezone.utc):
+        token_viejo.revocado = True
+        db.session.commit()
+        return jsonify({"error": "Token de actualización expirado"}), 401
+
     if token_viejo:
         if token_viejo.revocado:
             return jsonify({"error": "Token ya fue revocado"}), 401
         token_viejo.revocado = True
+        recordar_sesion = token_viejo.expira_en - token_viejo.creado_en > timedelta(days=30)
 
-    new_access = create_access_token(identity=identity)
-    new_jti = str(uuid.uuid4())
-    new_refresh = create_refresh_token(identity=identity, additional_claims={"jti": new_jti})
-
-    guardar_refresh_token(int(identity), new_jti, False)
+    new_access, new_refresh, new_jti = emitir_tokens(int(identity), recordar_sesion)
 
     if token_viejo:
         token_viejo.reemplazado_por_jti = new_jti
-
-    db.session.commit()
 
     return jsonify({
         "access_token": new_access,
@@ -133,11 +131,10 @@ def actualizar_token():
 @auth_bp.route("/cerrar-sesion", methods=["POST"])
 @jwt_required()
 def cerrar_sesion():
-    jti = get_jwt().get("jti")
-    token = TokenActualizacion.query.filter_by(identificador_jti=jti).first()
-    if token:
-        token.revocado = True
-        db.session.commit()
+    claims = get_jwt()
+    refresh_jti = claims.get("refresh_jti")
+    if refresh_jti:
+        revocar_refresh_token(refresh_jti)
     registrar_log("acceso", "logout", "Cierre de sesión")
     db.session.commit()
     return jsonify({"mensaje": "Sesión cerrada"}), 200
@@ -150,6 +147,20 @@ def perfil():
 
 
 # ── Helpers ──
+def emitir_tokens(usuario_id: int, recordar_sesion: bool = False):
+    refresh_jti = str(uuid.uuid4())
+    access_token = create_access_token(
+        identity=str(usuario_id),
+        additional_claims={"refresh_jti": refresh_jti},
+    )
+    refresh_token = create_refresh_token(
+        identity=str(usuario_id),
+        additional_claims={"jti": refresh_jti},
+    )
+    guardar_refresh_token(usuario_id, refresh_jti, recordar_sesion)
+    return access_token, refresh_token, refresh_jti
+
+
 def guardar_refresh_token(usuario_id: int, jti: str, recordar_sesion: bool = False):
     from flask import current_app
     exp_delta = current_app.config["JWT_REFRESH_TOKEN_EXPIRES"]
@@ -164,4 +175,9 @@ def guardar_refresh_token(usuario_id: int, jti: str, recordar_sesion: bool = Fal
         expira_en=datetime.now(timezone.utc) + exp_delta,
     )
     db.session.add(token)
-    db.session.commit()
+
+
+def revocar_refresh_token(jti: str):
+    token = TokenActualizacion.query.filter_by(identificador_jti=jti).first()
+    if token and not token.revocado:
+        token.revocado = True

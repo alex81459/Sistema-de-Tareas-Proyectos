@@ -23,6 +23,7 @@ class Usuario(db.Model):
     )
 
     proyectos = db.relationship("Proyecto", backref="usuario", lazy="dynamic", cascade="all,delete-orphan")
+    membresias_proyecto = db.relationship("MiembroProyecto", backref="usuario", lazy="dynamic", cascade="all,delete-orphan")
     etiquetas = db.relationship("Etiqueta", backref="usuario", lazy="dynamic", cascade="all,delete-orphan")
     tokens = db.relationship("TokenActualizacion", backref="usuario", lazy="dynamic", cascade="all,delete-orphan")
 
