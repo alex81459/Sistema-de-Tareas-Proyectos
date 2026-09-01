@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -7,8 +7,10 @@ from flask_jwt_extended import (
     get_jwt_identity,
     get_jwt,
     current_user,
+    set_refresh_cookies,
+    unset_refresh_cookies,
 )
-from app import db
+from app import db, limiter
 from app.models.usuario import Usuario
 from app.models.token_actualizacion import TokenActualizacion
 from app.schemas import RegistroSchema, LoginSchema, UsuarioSchema
@@ -22,6 +24,7 @@ usuario_schema = UsuarioSchema()
 
 
 @auth_bp.route("/registrar", methods=["POST"])
+@limiter.limit("3 per hour")
 def registrar():
     data = request.get_json(silent=True) or {}
     if isinstance(data.get("correo"), str):
@@ -47,15 +50,17 @@ def registrar():
 
     access_token, refresh_token, _ = emitir_tokens(usuario.id, False)
 
-    return jsonify({
+    respuesta = make_response(jsonify({
         "mensaje": "Usuario registrado exitosamente",
         "usuario": usuario_schema.dump(usuario),
         "access_token": access_token,
-        "refresh_token": refresh_token,
-    }), 201
+    }), 201)
+    set_refresh_cookies(respuesta, refresh_token)
+    return respuesta
 
 
 @auth_bp.route("/iniciar-sesion", methods=["POST"])
+@limiter.limit("5 per minute")
 def iniciar_sesion():
     data = request.get_json(silent=True) or {}
     if isinstance(data.get("correo"), str):
@@ -65,7 +70,16 @@ def iniciar_sesion():
         return jsonify({"errores": errores}), 400
 
     usuario = Usuario.query.filter_by(correo=data["correo"].lower().strip()).first()
+    ahora = datetime.now(timezone.utc).replace(tzinfo=None)
+    if usuario and usuario.bloqueado_hasta and usuario.bloqueado_hasta > ahora:
+        return jsonify({"error": "Cuenta bloqueada temporalmente. Intenta nuevamente mas tarde"}), 429
+
     if not usuario or not usuario.check_password(data["contrasena"]):
+        if usuario:
+            usuario.intentos_login_fallidos += 1
+            if usuario.intentos_login_fallidos >= 5:
+                usuario.bloqueado_hasta = ahora + timedelta(minutes=15)
+                usuario.intentos_login_fallidos = 0
         registrar_log("acceso", "login_fallido",
                       f"Intento fallido para: {data.get('correo', '???')}",
                       usuario_correo=data.get("correo", "desconocido"))
@@ -79,6 +93,8 @@ def iniciar_sesion():
         db.session.commit()
         return jsonify({"error": "Cuenta desactivada"}), 403
 
+    usuario.intentos_login_fallidos = 0
+    usuario.bloqueado_hasta = None
     recordar_sesion = data.get("recordarSesion", False)
     access_token, refresh_token, _ = emitir_tokens(usuario.id, recordar_sesion)
 
@@ -86,11 +102,12 @@ def iniciar_sesion():
                   "usuario", usuario.id, usuario.id, usuario.correo)
     db.session.commit()
 
-    return jsonify({
+    respuesta = make_response(jsonify({
         "usuario": usuario_schema.dump(usuario),
         "access_token": access_token,
-        "refresh_token": refresh_token,
-    }), 200
+    }), 200)
+    set_refresh_cookies(respuesta, refresh_token)
+    return respuesta
 
 
 @auth_bp.route("/actualizar-token", methods=["POST"])
@@ -122,10 +139,12 @@ def actualizar_token():
     if token_viejo:
         token_viejo.reemplazado_por_jti = new_jti
 
-    return jsonify({
+    respuesta = make_response(jsonify({
         "access_token": new_access,
-        "refresh_token": new_refresh,
-    }), 200
+    }), 200)
+    set_refresh_cookies(respuesta, new_refresh)
+    db.session.commit()
+    return respuesta
 
 
 @auth_bp.route("/cerrar-sesion", methods=["POST"])
@@ -137,7 +156,9 @@ def cerrar_sesion():
         revocar_refresh_token(refresh_jti)
     registrar_log("acceso", "logout", "Cierre de sesión")
     db.session.commit()
-    return jsonify({"mensaje": "Sesión cerrada"}), 200
+    respuesta = make_response(jsonify({"mensaje": "Sesion cerrada"}), 200)
+    unset_refresh_cookies(respuesta)
+    return respuesta
 
 
 @auth_bp.route("/perfil", methods=["GET"])
@@ -149,6 +170,7 @@ def perfil():
 # ── Helpers ──
 def emitir_tokens(usuario_id: int, recordar_sesion: bool = False):
     refresh_jti = str(uuid.uuid4())
+    exp_delta = timedelta(days=90 if recordar_sesion else 30)
     access_token = create_access_token(
         identity=str(usuario_id),
         additional_claims={"refresh_jti": refresh_jti},
@@ -156,6 +178,7 @@ def emitir_tokens(usuario_id: int, recordar_sesion: bool = False):
     refresh_token = create_refresh_token(
         identity=str(usuario_id),
         additional_claims={"jti": refresh_jti},
+        expires_delta=exp_delta,
     )
     guardar_refresh_token(usuario_id, refresh_jti, recordar_sesion)
     return access_token, refresh_token, refresh_jti

@@ -186,7 +186,7 @@ def obtener_tarea(id):
 @escritura_requerida
 def actualizar_tarea(id):
     uid = obtener_uid()
-    tarea = verificar_propiedad_tarea(id, uid)
+    tarea = verificar_propiedad_tarea(id, uid, "edicion")
 
     data = request.get_json(silent=True) or {}
     errores = actualizar_schema.validate(data)

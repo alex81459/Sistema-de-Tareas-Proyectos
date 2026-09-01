@@ -1,4 +1,6 @@
 """Script de datos iniciales (seed)."""
+import os
+
 from app import create_app, db
 from app.models.usuario import Usuario
 from app.models.proyecto import Proyecto
@@ -9,9 +11,11 @@ from datetime import date, timedelta
 
 def seed():
     app = create_app()
-    with app.app_context():
-        db.create_all()
+    if app.config.get("APP_ENV") == "production" and os.getenv("ALLOW_DEMO_SEED") != "true":
+        print("Seed demo omitido en produccion. Usa ALLOW_DEMO_SEED=true solo si es intencional.")
+        return
 
+    with app.app_context():
         #verificar si ya existe usuario demo
         if Usuario.query.filter_by(correo="demo@ejemplo.com").first():
             print("Seed ya ejecutado. Saliendo.")

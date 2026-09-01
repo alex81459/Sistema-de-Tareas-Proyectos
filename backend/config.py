@@ -17,9 +17,17 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
-    JWT_TOKEN_LOCATION = ["headers"]
+    JWT_TOKEN_LOCATION = ["headers", "cookies"]
     JWT_HEADER_NAME = "Authorization"
     JWT_HEADER_TYPE = "Bearer"
+    JWT_REFRESH_COOKIE_NAME = "refresh_token"
+    JWT_REFRESH_COOKIE_PATH = "/api/v1/autenticacion"
+    JWT_COOKIE_SECURE = APP_ENV == "production"
+    JWT_COOKIE_SAMESITE = "Strict"
+    JWT_COOKIE_CSRF_PROTECT = True
+
+    RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
+    TRUST_PROXY = os.getenv("TRUST_PROXY", "false").strip().lower() == "true"
 
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:4200").split(",")
 

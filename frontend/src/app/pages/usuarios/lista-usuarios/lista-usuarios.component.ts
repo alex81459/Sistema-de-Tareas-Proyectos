@@ -154,8 +154,8 @@ export class ListaUsuariosComponent implements OnInit {
         }
       });
     } else {
-      if (!this.form.contrasena || this.form.contrasena.length < 8) {
-        this.formError = 'La contraseña debe tener al menos 8 caracteres';
+      if (!this.form.contrasena || this.form.contrasena.length < 12) {
+        this.formError = 'La contraseña debe tener al menos 12 caracteres';
         this.guardando = false;
         return;
       }
@@ -204,8 +204,8 @@ export class ListaUsuariosComponent implements OnInit {
   }
 
   resetPassword(): void {
-    if (!this.nuevaContrasena || this.nuevaContrasena.length < 8) {
-      this.passwordError = 'La contraseña debe tener al menos 8 caracteres';
+    if (!this.nuevaContrasena || this.nuevaContrasena.length < 12) {
+      this.passwordError = 'La contraseña debe tener al menos 12 caracteres';
       return;
     }
     this.guardandoPassword = true;

@@ -24,7 +24,7 @@ sleep 30
 echo ""
 
 echo "[3/3] Creando tablas y datos iniciales..."
-docker exec -it tareas_api python -c "from app import create_app, db; app=create_app(); app.app_context().push(); db.create_all()"
+docker exec -it tareas_api flask --app run:app db upgrade
 docker exec -it tareas_api python seed.py
 echo ""
 

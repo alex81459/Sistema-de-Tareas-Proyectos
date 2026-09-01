@@ -14,6 +14,8 @@ class Usuario(db.Model):
     nombre_completo = db.Column(db.String(150), nullable=False)
     rol = db.Column(db.String(20), nullable=False, default="usuario")
     esta_activo = db.Column(db.Boolean, default=True, nullable=False)
+    intentos_login_fallidos = db.Column(db.Integer, default=0, nullable=False)
+    bloqueado_hasta = db.Column(db.DateTime, nullable=True)
     creado_en = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     actualizado_en = db.Column(
         db.DateTime,

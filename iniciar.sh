@@ -66,7 +66,7 @@ echo ""
 
 # ── Backend: crear tablas ──
 echo "[4/7] Creando tablas en la base de datos..."
-python3 -c "from app import create_app, db; app=create_app(); app.app_context().push(); db.create_all(); print('   ✓ Tablas creadas')" || {
+flask --app run:app db upgrade || {
     echo ""
     echo -e "${RED}[ERROR] No se pudo conectar a MySQL.${NC}"
     echo "   Asegúrate de que MySQL esté corriendo y que la BD 'tareas_proyectos' exista."

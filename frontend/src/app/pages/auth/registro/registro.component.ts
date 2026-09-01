@@ -35,12 +35,13 @@ export class RegistroComponent {
       this.error = 'Completa todos los campos';
       return;
     }
-    if (this.contrasena.length < 8) {
-      this.error = 'La contraseña debe tener al menos 8 caracteres';
+    if (this.contrasena.length < 12) {
+      this.error = 'La contraseña debe tener al menos 12 caracteres';
       return;
     }
-    if (!/\d/.test(this.contrasena)) {
-      this.error = 'La contraseña debe contener al menos un número';
+    if (!/[a-z]/.test(this.contrasena) || !/[A-Z]/.test(this.contrasena) ||
+        !/\d/.test(this.contrasena) || !/[^A-Za-z0-9]/.test(this.contrasena)) {
+      this.error = 'La contraseña debe incluir mayúscula, minúscula, número y símbolo';
       return;
     }
 

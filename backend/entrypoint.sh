@@ -1,15 +1,14 @@
-#!/bin/bash
-#script para inicializar el proyecto
+#!/bin/sh
+set -e
 
-echo "=== Esperando a que la base de datos esté lista ==="
-sleep 10
-
-echo "=== Creando tablas ==="
+echo "=== Aplicando migraciones ==="
 cd /app
-python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all(); print('Tablas creadas!')"
+flask --app run:app db upgrade
 
-echo "=== Ejecutando seed ==="
-python seed.py
+if [ "${RUN_DEMO_SEED:-false}" = "true" ]; then
+    echo "=== Ejecutando seed demo ==="
+    python seed.py
+fi
 
 echo "=== Iniciando API ==="
-gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 run:app
+exec gunicorn --bind 0.0.0.0:5000 --workers 4 --timeout 120 run:app

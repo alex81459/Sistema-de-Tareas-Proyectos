@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, throwError, BehaviorSubject } from 'rxjs';
@@ -49,14 +49,14 @@ export class AuthService {
   }
 
   registrar(data: RegistroRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/registrar`, data).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/registrar`, data, { withCredentials: true }).pipe(
       tap(res => this.guardarSesion(res)),
       catchError(this.manejarError)
     );
   }
 
   iniciarSesion(data: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/iniciar-sesion`, data).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/iniciar-sesion`, data, { withCredentials: true }).pipe(
       tap(res => {
         this.guardarSesion(res);
       }),
@@ -67,21 +67,23 @@ export class AuthService {
   }
 
   cerrarSesion(): void {
-    this.http.post(`${this.apiUrl}/cerrar-sesion`, {}).subscribe({ error: () => {} });
+    this.http.post(`${this.apiUrl}/cerrar-sesion`, {}, { withCredentials: true }).subscribe({ error: () => {} });
     this.limpiarSesion();
     this.router.navigate(['/iniciar-sesion']);
   }
 
-  actualizarToken(): Observable<{ access_token: string; refresh_token: string }> {
-    const refreshToken = this.getRefreshToken();
-    return this.http.post<{ access_token: string; refresh_token: string }>(
+  actualizarToken(): Observable<{ access_token: string }> {
+    const csrfToken = this.getCookie('csrf_refresh_token');
+    return this.http.post<{ access_token: string }>(
       `${this.apiUrl}/actualizar-token`,
       {},
-      { headers: { Authorization: `Bearer ${refreshToken}` } }
+      {
+        withCredentials: true,
+        headers: csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {},
+      }
     ).pipe(
       tap(res => {
         localStorage.setItem('access_token', res.access_token);
-        localStorage.setItem('refresh_token', res.refresh_token);
       })
     );
   }
@@ -99,14 +101,15 @@ export class AuthService {
     return localStorage.getItem('access_token');
   }
 
-  getRefreshToken(): string | null {
-    return localStorage.getItem('refresh_token');
+  private getCookie(nombre: string): string | null {
+    const prefijo = `${encodeURIComponent(nombre)}=`;
+    const cookie = document.cookie.split('; ').find(item => item.startsWith(prefijo));
+    return cookie ? decodeURIComponent(cookie.substring(prefijo.length)) : null;
   }
 
   private guardarSesion(res: AuthResponse): void {
     try {
       localStorage.setItem('access_token', res.access_token);
-      localStorage.setItem('refresh_token', res.refresh_token);
       localStorage.setItem('usuario', JSON.stringify(res.usuario));
       this._usuario.next(res.usuario);
     } catch (err) {
@@ -116,7 +119,6 @@ export class AuthService {
 
   private limpiarSesion(): void {
     localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
     localStorage.removeItem('usuario');
     this._usuario.next(null);
   }
@@ -134,4 +136,3 @@ export class AuthService {
     return throwError(() => error);
   }
 }
-    

@@ -33,6 +33,9 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      TRUST_PROXY: "true"
+      RATELIMIT_STORAGE_URI: ${RATELIMIT_STORAGE_URI:-memory://}
+      RUN_DEMO_SEED: ${RUN_DEMO_SEED:-false}
     ports:
       - "5000:5000"
     depends_on:

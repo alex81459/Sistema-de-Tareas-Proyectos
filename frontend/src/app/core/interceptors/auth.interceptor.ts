@@ -44,7 +44,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<any>, next: 
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && authService.getRefreshToken()) {
+      if (error.status === 401 && authService.getAccessToken()) {
         return obtenerRefreshCompartido(authService).pipe(
           switchMap((nuevoAccessToken) => {
             const retryReq = agregarToken(req, nuevoAccessToken);

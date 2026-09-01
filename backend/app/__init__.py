@@ -4,6 +4,9 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_marshmallow import Marshmallow
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import Config
 
@@ -11,18 +14,22 @@ db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
 ma = Marshmallow()
+limiter = Limiter(key_func=get_remote_address)
 
 
 def create_app(config_class=Config):
     config_class.validate()
     app = Flask(__name__)
     app.config.from_object(config_class)
+    if app.config.get("TRUST_PROXY", False):
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     #extensiones
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
     ma.init_app(app)
+    limiter.init_app(app)
     CORS(app, origins=app.config["CORS_ORIGINS"], supports_credentials=True)
 
     #blueprints
@@ -63,7 +70,12 @@ def create_app(config_class=Config):
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
         identity = jwt_data["sub"]
-        return Usuario.query.get(int(identity))
+        usuario = db.session.get(Usuario, int(identity))
+        return usuario if usuario and usuario.esta_activo else None
+
+    @jwt.user_lookup_error_loader
+    def user_lookup_error(_jwt_header, _jwt_payload):
+        return {"error": "Usuario inexistente o desactivado"}, 401
 
     #errores de handlers
     @app.errorhandler(404)
@@ -77,6 +89,10 @@ def create_app(config_class=Config):
     @app.errorhandler(422)
     def unprocessable(e):
         return {"error": "Datos no procesables"}, 422
+
+    @app.errorhandler(429)
+    def too_many_requests(e):
+        return {"error": "Demasiadas solicitudes. Intenta nuevamente mas tarde"}, 429
 
     @app.errorhandler(500)
     def internal_error(e):

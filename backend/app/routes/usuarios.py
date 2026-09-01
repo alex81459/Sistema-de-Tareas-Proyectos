@@ -2,8 +2,13 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from app import db
 from app.models.usuario import Usuario
-from app.schemas import UsuarioAdminSchema, UsuarioCrearAdminSchema, UsuarioActualizarAdminSchema
+from app.models.token_actualizacion import TokenActualizacion
+from app.schemas import (
+    UsuarioAdminSchema, UsuarioCrearAdminSchema, UsuarioActualizarAdminSchema,
+    validar_politica_contrasena,
+)
 from app.utils import rol_requerido, admin_requerido, paginar, registrar_log
+from marshmallow import ValidationError
 
 usuarios_bp = Blueprint("usuarios", __name__)
 usuario_schema = UsuarioAdminSchema()
@@ -128,6 +133,10 @@ def actualizar(usuario_id):
             registrar_log("usuario", accion,
                           f"Usuario {'activado' if data['esta_activo'] else 'desactivado'}: {usuario.correo}",
                           "usuario", usuario.id)
+            if not data["esta_activo"]:
+                TokenActualizacion.query.filter_by(usuario_id=usuario.id, revocado=False).update(
+                    {"revocado": True}, synchronize_session=False
+                )
 
     db.session.commit()
     return jsonify({
@@ -172,10 +181,15 @@ def reset_password(usuario_id):
 
     data = request.get_json(silent=True) or {}
     nueva = data.get("contrasena", "").strip()
-    if len(nueva) < 8:
-        return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
+    try:
+        validar_politica_contrasena(nueva)
+    except ValidationError as error:
+        return jsonify({"error": str(error)}), 400
 
     usuario.set_password(nueva)
+    TokenActualizacion.query.filter_by(usuario_id=usuario.id, revocado=False).update(
+        {"revocado": True}, synchronize_session=False
+    )
     db.session.commit()
 
     registrar_log("usuario", "reset_password",

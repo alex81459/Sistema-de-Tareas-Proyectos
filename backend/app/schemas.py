@@ -12,12 +12,36 @@ from marshmallow import fields, validate, validates, ValidationError, post_dump,
 import re
 
 
+CONTRASENAS_COMUNES = {
+    "password", "password123", "12345678", "123456789", "qwerty123",
+    "admin123", "demo1234", "contrasena", "contraseña",
+}
+
+
+def validar_politica_contrasena(value):
+    errores = []
+    if len(value) < 12:
+        errores.append("tener al menos 12 caracteres")
+    if not re.search(r"[a-z]", value):
+        errores.append("incluir una letra minuscula")
+    if not re.search(r"[A-Z]", value):
+        errores.append("incluir una letra mayuscula")
+    if not re.search(r"\d", value):
+        errores.append("incluir un numero")
+    if not re.search(r"[^A-Za-z0-9]", value):
+        errores.append("incluir un simbolo")
+    if value.lower() in CONTRASENAS_COMUNES:
+        errores.append("no ser una contrasena comun")
+    if errores:
+        raise ValidationError("La contrasena debe " + ", ".join(errores) + ".")
+
+
 #Usuario
 class UsuarioSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Usuario
         load_instance = True
-        exclude = ("hash_contrasena",)
+        exclude = ("hash_contrasena", "intentos_login_fallidos", "bloqueado_hasta")
 
     correo = fields.Email(required=True)
     nombre_completo = fields.String(required=True, validate=validate.Length(min=2, max=150))
@@ -29,7 +53,7 @@ class UsuarioAdminSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Usuario
         load_instance = True
-        exclude = ("hash_contrasena",)
+        exclude = ("hash_contrasena", "intentos_login_fallidos", "bloqueado_hasta")
 
     correo = fields.Email(required=True)
     nombre_completo = fields.String(required=True, validate=validate.Length(min=2, max=150))
@@ -39,7 +63,7 @@ class UsuarioAdminSchema(ma.SQLAlchemyAutoSchema):
 
 class UsuarioCrearAdminSchema(ma.Schema):
     correo = fields.Email(required=True)
-    contrasena = fields.String(required=True, validate=validate.Length(min=8, max=128))
+    contrasena = fields.String(required=True, validate=validate.Length(min=12, max=128))
     nombre_completo = fields.String(required=True, validate=validate.Length(min=2, max=150))
     rol = fields.String(
         validate=validate.OneOf(["administrador", "jefe", "usuario", "visualizador"]),
@@ -48,8 +72,7 @@ class UsuarioCrearAdminSchema(ma.Schema):
 
     @validates("contrasena")
     def validar_contrasena(self, value):
-        if not re.search(r"\d", value):
-            raise ValidationError("La contrase\u00f1a debe contener al menos un n\u00famero.")
+        validar_politica_contrasena(value)
 
 
 class UsuarioActualizarAdminSchema(ma.Schema):
@@ -63,14 +86,13 @@ class RegistroSchema(ma.Schema):
     correo = fields.Email(required=True)
     contrasena = fields.String(
         required=True,
-        validate=validate.Length(min=8, max=128),
+        validate=validate.Length(min=12, max=128),
     )
     nombre_completo = fields.String(required=True, validate=validate.Length(min=2, max=150))
 
     @validates("contrasena")
     def validar_contrasena(self, value):
-        if not re.search(r"\d", value):
-            raise ValidationError("La contraseña debe contener al menos un numero")
+        validar_politica_contrasena(value)
 
 
 class LoginSchema(ma.Schema):

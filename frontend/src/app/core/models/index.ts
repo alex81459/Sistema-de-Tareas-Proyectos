@@ -25,7 +25,6 @@ export interface RegistroRequest {
 export interface AuthResponse {
   usuario: Usuario;
   access_token: string;
-  refresh_token: string;
   mensaje?: string;
 }
 

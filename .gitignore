@@ -35,6 +35,7 @@ coverage/
 # Variables de entorno
 .env
 .env.local
+MySQL y Login.txt
 
 # Python
 __pycache__/

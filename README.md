@@ -1,224 +1,188 @@
 # Sistema de Tareas y Proyectos (TaskFlowAS)
-Sistema de gestion de tareas y proyectos con autenticacion segura, multi-tenant, control de permisos, filtros avanzados, paginacion, validaciones robustas y reglas de negocio.
 
-<img width="1917" height="926" alt="Captura de pantalla 2026-02-23 215938" src="https://github.com/user-attachments/assets/5d8550e0-4607-40ec-81d2-4e962905517d" />
+TaskFlowAS es una aplicación para organizar proyectos y tareas con autenticación, colaboración, control de permisos, filtros avanzados, paginación, auditoría y panel de estadísticas.
 
-## Descripción General
-TaskFlowAS es una solucion para organizar y gestionar proyectos y tareas, permite a los usuarios 
-crear proyectos, definir tareas con diferentes prioridades y estados, implementar checklists, añadir comentarios, 
-registrar actividad de auditoria y visualizar analisis en tiempo real a traves de dashboard
+<img width="1917" height="926" alt="Panel principal de TaskFlowAS" src="https://github.com/user-attachments/assets/5d8550e0-4607-40ec-81d2-4e962905517d" />
 
-## Tecnologias
-Frontend - Angular + PrimeNG + TailwindCSS  19+ 
-Backend - Flask + SQLAlchemy + JWT  Python 3.13 
-Base de datos - MySQL  8.0.45 
-Contenedores - Docker + Docker Compose  
-Iconos - PrimeIcons v6+ 
+## Tecnologías
 
-<img width="447" height="629" alt="Captura de pantalla 2026-02-23 215924" src="https://github.com/user-attachments/assets/cc89743b-68bf-4a20-9d98-072a33b86322" />
+- Frontend: Angular 19, PrimeNG, PrimeFlex y Chart.js.
+- Backend: Flask, SQLAlchemy, Flask-Migrate y JWT sobre Python 3.12.
+- Base de datos: MySQL 8.
+- Infraestructura: Docker, Docker Compose, Gunicorn y Nginx.
 
-## Caracteristicas Principales
-# Autenticacion y Sesion
-- Registro e Inicio de Sesión con JWT - JSON Web Tokens
-- Recordar Sesion - Checkbox para extender tokens:
-Sin recordar 30 dias de sesion
-Con recordar 90 dias de sesion
-- Refresh Tokens renovacion automatica de sesion
-- Interceptor HTTP anexion automatica de tokens en todas las peticiones
-- Multi-tenant cada usuario ve solo sus datos
-- Sesion Persistente datos guardados en localStorage
+## Características
 
-<img width="1642" height="940" alt="Captura de pantalla 2026-02-23 215946" src="https://github.com/user-attachments/assets/475dba4e-a10e-4a35-a28f-26cd670516fd" />
+### Autenticación y seguridad
 
-# Proyectos
-- CRUD completo crear, leer, actualizar y eliminar
-- Archivar y restaurar proyectos
-- Filtro por estado activos / archivados
-- Busqueda por nombre
-- Contador de tareas por proyecto
+- Registro e inicio de sesión con access y refresh tokens.
+- Refresh token almacenado en cookie `HttpOnly`, con protección CSRF.
+- Sesiones de 30 días o 90 días al seleccionar «Recordar sesión».
+- Rate limiting por IP y bloqueo temporal tras intentos fallidos.
+- Invalidación de sesiones al desactivar usuarios o restablecer contraseñas.
+- Política de contraseña con longitud, mayúscula, minúscula, número y símbolo.
+- Auditoría de accesos y operaciones sensibles.
 
-<img width="630" height="706" alt="Captura de pantalla 2026-02-23 220020" src="https://github.com/user-attachments/assets/11fe19f1-4c63-46d5-8ae9-dad0656d32e0" />
-<img width="584" height="400" alt="Captura de pantalla 2026-02-23 220039" src="https://github.com/user-attachments/assets/0fdcf027-13e2-4f9e-ae84-963ac5c88466" />
+### Proyectos y colaboración
 
-# Tareas
-- Estados = Pendiente  En Progreso  Completada
-- Prioridades = Baja  Media  Alta  Urgente
-- Filtros Avanzados = Proyecto, estado, prioridad, etiquetas, rango de fechas, tareas vencidas
-- Deadlines = detección automática de tareas vencidas
-- Etiquetas Multiples = relacion con colores personalizados
-- Checklist = Subtareas dentro de tareas
-- Comentarios = notas colaborativas por tarea
-- Registro de Actividad = auditoria automática de cambios
-- Vista Kanban = arrastrar y soltar entre columnas
-- Exportar Excel = descarga en formato .xlsx
-- Recordatorios = panel de tareas proximas a vencer
+- CRUD, archivado y restauración de proyectos.
+- Miembros por proyecto con permisos de lectura, edición o administración.
+- Asignación de tareas a participantes activos.
+- Búsqueda, filtros y contadores por proyecto.
 
-# Roles y Permisos
-- 4 roles con jerarquía: Administrador > Jefe > Usuario > Visualizador
-- Administrador: acceso total, gestión de usuarios, auditoría
-- Jefe: ve todos los datos, gestiona proyectos y tareas
-- Usuario: gestiona solo sus propios datos
-- Visualizador: solo lectura, sin crear ni editar
-- Guards en frontend (adminGuard, gestorGuard, escrituraGuard)
-- Decoradores en backend (admin_requerido, escritura_requerida, rol_requerido)
+### Tareas
 
-# Auditoría de Seguridad
-- Registro automático de accesos (login exitoso/fallido, logout, registro)
-- Registro de cambios sensibles (CRUD usuarios, proyectos, tareas, etiquetas)
-- Cambios de rol, activación/desactivación, reset de contraseña
-- Panel de auditoría con estadísticas (eventos 24h, 7d, logins fallidos)
-- Filtros avanzados por categoría, acción, correo, fecha, IP
-- Tabla paginada con detalle completo (solo visible para Administrador)
+- Estados: pendiente, en progreso y completada.
+- Prioridades: baja, media, alta y urgente.
+- Fechas de vencimiento y detección automática de atrasos.
+- Etiquetas múltiples, checklists, comentarios y menciones.
+- Registro de actividad, vista Kanban y recordatorios.
+- Exportación a Excel.
 
-# Modo Oscuro
-- Toggle en la barra superior (sol/luna)
-- Estilos dark para sidebar, topbar, tablas, cards, filtros, gráficas y tooltips
-- Persistencia de preferencia en localStorage
+### Roles
 
-# Panel de Control
-- Estadisticas Proyectos activos, tareas pendientes y completadas, vencidas
-- Graficas: 
-Tareas por prioridad (Doughnut)
-Creadas vs Completadas (Línea)
-Completadas por semana (Barras)
-Tareas por proyecto (Barras)
-- Etiquetas Mas Usadas: Top 5 con contador
-- Progreso General barra de progreso con porcentaje
+- Administrador: acceso total, usuarios y auditoría.
+- Jefe: visualización global y gestión de proyectos y tareas.
+- Usuario: gestión de los recursos a los que tiene acceso.
+- Visualizador: acceso de solo lectura.
 
-<img width="1636" height="939" alt="Captura de pantalla 2026-02-23 220012" src="https://github.com/user-attachments/assets/4edf9bd0-c938-482a-97ca-a539a4293c68" />
+### Panel de control
 
+- Resumen de proyectos y tareas.
+- Tareas vencidas y próximas a vencer.
+- Gráficos por prioridad, estado, semana y proyecto.
+- Etiquetas más utilizadas y progreso general.
 
-# Inicio Rápido
-### Con Docker (Lo Recomiendo para evitar problemas)
-1. Copiar configuración del ambiente
+## Inicio rápido con Docker
+
+Requisitos: Docker y Docker Compose.
+
+1. Copia la configuración y reemplaza todos los valores de ejemplo:
+
+```bash
 cp .env.example .env
+```
 
-2. Levantar todos los servicios
-docker-compose up --build
+2. Construye e inicia los servicios:
 
-3. Crear tablas y datos iniciales
-docker exec -it tareas_api python -c \
-  "from app import create_app, db; \
-   app=create_app(); \
-   app.app_context().push(); \
-   db.create_all()"
- 
-4. Ejecutar seed de datos (datros basicos para el funcionamineto y pruebas)
+```bash
+docker compose up --build
+```
+
+El contenedor de la API ejecuta automáticamente `flask db upgrade` antes de iniciar Gunicorn.
+
+3. Opcionalmente, carga datos demo para desarrollo:
+
+```bash
 docker exec -it tareas_api python seed.py
+```
 
-URLs de Acceso:
-- Frontend: http://localhost:4200
-- API: http://localhost:5000/api/v1
-- MySQL: localhost:1219
+También puedes establecer `RUN_DEMO_SEED=true` en `.env` para cargar el seed durante el arranque. No lo habilites en producción.
 
-# Sin Docker (Desarrollo Local y pruebas)
+### Servicios
 
-## Opcion rapida con script (Linux/macOS)
-chmod +x iniciar.sh
-./iniciar.sh
+- Frontend: <http://localhost>
+- API: <http://localhost:5000/api/v1>
+- MySQL: `localhost:3306`
 
-## Configuracion manual
+## Desarrollo local
+
+### Backend
+
+```bash
 cd backend
-
-1. Crear y activar entorno virtual
 python -m venv venv
-venv\Scripts\activate   # Windows
+```
 
-2. Instalar dependencias
+En Windows:
+
+```powershell
+venv\Scripts\activate
 pip install -r requirements.txt
-
-# Configurar Base de Datos
-1. Crear BD CREATE DATABASE tareas_proyectos;
-2. Editar config.py con credenciales MySQL
-
-3. Inicializar BD
-python -c \
-  "from app import create_app, db; \
-   app=create_app(); \
-   app.app_context().push(); \
-   db.create_all()"
-
-Si ya tenias una base creada antes de la funcionalidad de colaboracion, aplica tambien:
-
-mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_miembros_proyecto.sql
-
-Si ya tenias una base creada antes de la asignacion de tareas a usuarios, aplica tambien:
-
-mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_asignacion_tareas.sql
-
-Si ya tenias una base creada antes de las menciones en comentarios, aplica tambien:
-
-mysql -u root -p tareas_proyectos < db/2026-08-16_agregar_menciones_comentarios.sql
-
-4. Llenar con datos de prueba
-python seed.py
-
-# Iniciar servidor (http://localhost:5000)
+flask --app run:app db upgrade
 python run.py
+```
+
+En Linux o macOS:
+
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+flask --app run:app db upgrade
+python run.py
+```
+
+La API estará disponible en <http://localhost:5000/api/v1>.
+
+### Frontend
+
+```bash
 cd frontend
-npm install
-ng serve --open
+npm install --legacy-peer-deps
+npm start
+```
 
-# Usuario Demo
-Use estas credenciales para probar el sistema:
-Correo:  demo@ejemplo.com
-Contraseña:  Demo1234
-Rol: Administrador (acceso completo)
+El frontend de desarrollo estará disponible en <http://localhost:4200>.
 
-Usuarios adicionales de prueba (seed):
-- admin@ejemplo.com / Demo1234 (Administrador)
-- jefe@ejemplo.com / Demo1234 (Jefe)
-- visor@ejemplo.com / Demo1234 (Visualizador)
+## Migraciones
 
-# Reglas de Negocio
+Después de modificar un modelo:
 
-1. Multi-tenant Seguro un usuario SOLO ve sus proyectos y tareas
-2. Jerarquia una tarea siempre pertenece a un proyecto
-3. Etiquetas N:N una tarea puede tener multiples etiquetas
-4. Cierre Automatico si tarea = Completada se asigna fecha de completación
-5. Overdue Automatico tarea vencida si fecha_vencimiento < hoy Y estado diferente a Completada
-6. Auditoria todos los cambios se registran automaticamente
-7. Refresh Token Flexible 30 días por defecto 90 dias si marco "Recordar Sesión"
-8. Cascade Delete eliminar proyecto elimina tareas asociadas
-9. Roles Jerárquicos admin y jefe ven todos los datos; usuario solo los propios; visualizador solo lectura
-10. Auditoría de Seguridad toda acción sensible queda registrada con IP, usuario y timestamp
-11. Colaboración por Proyecto proyectos pueden compartirse con miembros y permisos de lectura, edicion o administracion
-12. Asignación de Tareas tareas pueden asignarse a participantes activos del proyecto
-13. Menciones en Comentarios comentarios aceptan menciones de participantes con formato @[correo@ejemplo.com]
+```bash
+cd backend
+flask --app run:app db migrate -m "descripción del cambio"
+flask --app run:app db upgrade
+```
 
-------------------------------------------------------------------
+Revisa siempre la migración generada antes de aplicarla.
 
-#  Licencia
-Proyecto de codigo abierto libre para uso educativo y comercial
+Las bases creadas antes de adoptar Alembic deben respaldarse, actualizarse una única vez con los SQL heredados de `db/` y registrarse mediante:
 
-# Proposito Educativo
-Este proyecto fue desarrollado de forma local como iniciativa de aprendizaje y práctica para adquirir y mejorar en:
-- Angular 19 Framework 
-- Flask Backend ligero y flexible 
-- TypeScript 
-- RxJS Programacion reactiva
-- SQLAlchemy ORM avanzado 
-- JWT Autenticación segura con tokens
-- Docker & Docker Compose para containers
-- PrimeNG Componentes
+```bash
+flask --app run:app db stamp head
+```
 
-# Mejoras Futuras Planeadas (que algun dia llegaran XD)
-En versiones proximas se agregarasn las siguientes caracteristicas:
+No ejecutes la migración inicial sobre una base que ya contiene las tablas.
 
-# Seguridad & Autenticacion
-- 2FA (Two-Factor Authentication) Códigos TOTP
+## Datos demo
 
-# Colaboracion
-- Compartir Proyectos Permisos por usuario (read, edit, admin)
-- Equipos Agrupación de usuarios para proyectos comunes
-- Invitaciones Agregar miembros a proyectos
-- Comentarios Anidados Respuestas a comentarios
-- Historial de Cambios Detallado Quien cambio quq y cuando
-- Notificaciones en Tiempo Real con WebSockets
+El seed crea usuarios de prueba exclusivamente para desarrollo. Sus credenciales se muestran al ejecutar `python seed.py`. El backend bloquea el seed cuando `APP_ENV=production`, salvo habilitación explícita con `ALLOW_DEMO_SEED=true`.
 
-# Funcionalidad
-- Recurrencia de Tareas Tareas que se repiten (diaria, semanal, mensual)
-- Calendario Integrado Vista de tareas por fecha
+## Reglas de negocio
 
-# UI/UX
-- Mejor compatibilidad Movil
+1. Los usuarios solo acceden a proyectos propios o compartidos, salvo los roles con visibilidad global.
+2. Cada tarea pertenece a un proyecto.
+3. Los permisos de proyecto son lectura, edición y administración.
+4. Solo los participantes activos pueden recibir tareas o ser mencionados.
+5. Completar una tarea registra automáticamente su fecha de finalización.
+6. Una tarea está vencida cuando su fecha límite ya pasó y no está completada.
+7. Los cambios relevantes se registran en la auditoría.
+8. Eliminar un proyecto elimina sus tareas relacionadas mediante cascada.
+
+## Mejoras futuras
+
+### Seguridad
+
+- Autenticación de dos factores mediante TOTP.
+- Recuperación de contraseña por correo.
+
+### Colaboración
+
+- Equipos reutilizables para varios proyectos.
+- Invitaciones con aceptación y vencimiento.
+- Respuestas anidadas en comentarios.
+- Notificaciones en tiempo real mediante WebSockets.
+
+### Funcionalidad
+
+- Tareas recurrentes.
+- Vista de calendario.
+- Historial detallado por campo.
+
+### Interfaz
+
+- Mejoras adicionales de accesibilidad y experiencia móvil.
+
+## Licencia
+
+Proyecto de código abierto para uso educativo y comercial.
